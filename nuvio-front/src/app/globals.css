@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+:root {
+  /* BASE */
+  --background: #f7f9f7;
+  --foreground: #1a1f1b;
+
+  --card: #ffffff;
+  --card-border: #d5ddd7;
+  --card-foreground: #1a1f1b;
+
+  --button-bg: #0f6b2e;
+  --button-hover-bg: oklch(38.037% 0.09647 149.431);
+  --button-foreground: #ffffff;
+  --secondary-button-bg: #bee7c5;
+  --secondary-button-hover-bg: #cff1d8;
+  --secondary-button-foreground: #1a1f1b;
+
+  --popover: #ffffff;
+  --popover-foreground: #1a1f1b;
+
+  --primary: #0f6b2e;
+  --primary-hover: #0f5024;
+  --primary-foreground: #ffffff;
+
+  --secondary: #e9eeea;
+  --secondary-foreground: #1a1f1b;
+
+  --muted: #f1f4f1;
+  --muted-foreground: #5f6b62;
+
+  --accent: #2fae5a;
+  --accent-foreground: #ffffff;
+
+  --border: #d5ddd7;
+  --input: #d5ddd7;
+  --ring: #2fae5a;
+
+  --searchbar-bg: #f4f4f0;
+  --searchbar-border: #e2e2dc;
+  --searchbar-text: #3a3a35;
+  --searchbar-placeholder: #888780;
+  --searchbar-focus-ring: #eaead6;
+
+  --radius: 16px;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1f1b;
+  --sidebar-border: #e5ebe6;
+
+  --hoverbg: #f0f7f1;
+  --hovertxt: #1a1f1b;
+
+  --notification-bg: #1a6e0027;
+  --notification-text: #1a1f1b;
+  --notification-outline: #1a6e00;
+
+  --online: #57d67a;
+  --ausente: #f5b700;
+  --ocupado: #e5484d;
+  --offline: #2e2e2e;
+
+  /* PRIORIDADE */
+  --priority-high-bg: #fee2e2;
+  --priority-high-text: #b91c1c;
+  --priority-medium-bg: #fef9c3;
+  --priority-medium-text: #a16207;
+  --priority-low-bg: #dcfce7;
+  --priority-low-text: #15803d;
+
+  /* STATUS */
+  --status-open-bg: #e0f2fe;
+  --status-open-text: #0369a1;
+  --status-progress-bg: #d1fae5;
+  --status-progress-text: #047857;
+  --status-waiting-bg: #ffedd5;
+  --status-waiting-text: #c2410c;
+  --status-closed-bg: #e4e4e7;
+  --status-closed-text: #3f3f46;
+
+  --success: #57d67a;
+  --warning: #f5b700;
+  --danger: #e5484d;
+
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+
+  --gradient-primary: linear-gradient(135deg, #0f6b2e 0%, #2fae5a 100%);
+
+  /* ADMIN */
+  --admin-bg: #f7f9f7;
+  --admin-foreground: #1a1f1b;
+  --admin-card: #ffffff;
+  --admin-card-border: #d5ddd7;
+}
+
+.dark {
+  --background: #0d1210;
+  --foreground: #e8ede9;
+
+  --card: #141a15;
+  --card-border: #243027;
+  --card-foreground: #e8ede9;
+
+  --button-bg: #2fae5a;
+  --button-hover-bg: #3dc96a;
+  --button-foreground: #ffffff;
+  --secondary-button-bg: #1a3320;
+  --secondary-button-hover-bg: #1f3d26;
+  --secondary-button-foreground: #e8ede9;
+
+  --popover: #141a15;
+  --popover-foreground: #e8ede9;
+
+  --primary: #2fae5a;
+  --primary-hover: #3dc96a;
+  --primary-foreground: #ffffff;
+
+  --secondary: #1a2a1c;
+  --secondary-foreground: #e8ede9;
+
+  --muted: #1a2a1c;
+  --muted-foreground: #8a9e8d;
+
+  --accent: #2fae5a;
+  --accent-foreground: #ffffff;
+
+  --border: #243027;
+  --input: #243027;
+  --ring: #2fae5a;
+
+  --searchbar-bg: #141a15;
+  --searchbar-border: #243027;
+  --searchbar-text: #e8ede9;
+  --searchbar-placeholder: #5f6b62;
+  --searchbar-focus-ring: #1a3320;
+
+  --radius: 16px;
+
+  --sidebar: #0f1510;
+  --sidebar-foreground: #e8ede9;
+  --sidebar-border: #1e2b20;
+
+  --hoverbg: #1a2a1c;
+  --hovertxt: #e8ede9;
+
+  --notification-bg: #2fae5a22;
+  --notification-text: #e8ede9;
+  --notification-outline: #2fae5a;
+
+  --online: #57d67a;
+  --ausente: #f5b700;
+  --ocupado: #e5484d;
+  --offline: #5f6b62;
+
+  --success: #57d67a;
+  --warning: #f5b700;
+  --danger: #e5484d;
+
+  /* PRIORIDADE */
+  --priority-high-bg: #451a1a;
+  --priority-high-text: #fca5a5;
+  --priority-medium-bg: #422006;
+  --priority-medium-text: #fde047;
+  --priority-low-bg: #052e16;
+  --priority-low-text: #86efac;
+
+  /* STATUS */
+  --status-open-bg: #082f49;
+  --status-open-text: #7dd3fc;
+  --status-progress-bg: #022c22;
+  --status-progress-text: #6ee7b7;
+  --status-waiting-bg: #431407;
+  --status-waiting-text: #fdba74;
+  --status-closed-bg: #27272a;
+  --status-closed-text: #d4d4d8;
+
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+
+  --gradient-primary: linear-gradient(135deg, #0f6b2e 0%, #2fae5a 100%);
+
+  /* ADMIN */
+  --admin-bg: #0d1210;
+  --admin-foreground: #e8ede9;
+  --admin-card: #141a15;
+  --admin-card-border: #243027;
+}
+
+::selection {
+  background-color: #1a7a4a;
+  color: #ffffff;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--card) inset;
+  -webkit-text-fill-color: var(--foreground);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #22c55e;
+  border-radius: 999px;
+}
+
+* {
+  scroll-behavior: smooth;
+}
