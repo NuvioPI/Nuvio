@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { AnimateIcon } from "@/components/animate-ui/icons/icon";
 import { PanelLeftClose } from "@/components/animate-ui/icons/panel-left-close";
 import { PanelLeftOpen } from "@/components/animate-ui/icons/panel-left-open";
@@ -12,13 +14,13 @@ import { LayoutDashboard } from "@/components/animate-ui/icons/layout-dashboard"
 import { Settings } from "@/components/animate-ui/icons/settings";
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard" },
-  { icon: MessageSquareText, label: "Chamados" },
-  { icon: Plus, label: "Novo Chamado" },
-  { icon: Layers, label: "Base de Conhecimento" },
-  { icon: UsersRound, label: "Usuários" },
-  { icon: ChartSpline, label: "Relatórios" },
-  { icon: Settings, label: "Configurações" },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+  { icon: MessageSquareText, label: "Chamados", href: "/chamados" },
+  { icon: Plus, label: "Novo Chamado", href: "/nChamados" },
+  { icon: Layers, label: "Base de Conhecimento", href: "/base-conhecimento" },
+  { icon: UsersRound, label: "Usuários", href: "/usuarios" },
+  { icon: ChartSpline, label: "Relatórios", href: "/relatorios" },
+  { icon: Settings, label: "Configurações", href: "/settings" },
 ];
 
 interface SidebarProps {
@@ -30,9 +32,10 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle, onMobileClose }: SidebarProps) {
   return (
     <aside className="w-full bg-(--sidebar) border-r border-(--sidebar-border) flex flex-col h-full">
-
       {/* LOGO */}
-      <div className={`flex items-center gap-3 transition-all duration-300 ${collapsed ? "p-4 mb-10 mt-5 justify-center" : "p-10 justify-center"}`}>
+      <div
+        className={`flex items-center gap-3 transition-all duration-300 ${collapsed ? "p-4 mb-10 mt-5 justify-center" : "p-10 justify-center"}`}
+      >
         <svg
           width={collapsed ? "32" : "50"}
           height={collapsed ? "32" : "50"}
@@ -46,40 +49,43 @@ export function Sidebar({ collapsed, onToggle, onMobileClose }: SidebarProps) {
             fill="currentColor"
           />
         </svg>
-
       </div>
 
       {/* NAV */}
       <nav className="flex-1 px-2">
         <div className="flex flex-col gap-1">
-          {navItems.map(({ icon: Icon, label }) => (
+          {navItems.map(({ icon: Icon, label, href }) => (
             <AnimateIcon key={label} animateOnHover>
-              <a
-                href="#"
+              <Link
+                href={href}
                 title={collapsed ? label : undefined}
                 onClick={onMobileClose}
                 className={`
-                  flex items-center gap-3 p-3
                   text-(--sidebar-foreground)
-                  hover:bg-(--hoverbg) hover:text-(--hovertxt)
-                  rounded-lg transition-all duration-200
+                  flex items-center gap-3 p-3
+                  hover:text-(--hovertxt)
+                  hover:bg-(--hoverbg)
                   ${collapsed ? "justify-center" : ""}
-                `}
+                  rounded-lg transition-all duration-200
+      `}
               >
                 <Icon className="shrink-0 w-5 h-5" />
-                {!collapsed && (
-                  <span className="truncate">{label}</span>
-                )}
-              </a>
+
+                {!collapsed && <span className="truncate">{label}</span>}
+              </Link>
             </AnimateIcon>
           ))}
         </div>
       </nav>
 
       {/* FOOTER */}
-      <div className={`p-4 border-t border-white/10 flex items-center transition-all duration-300 ${collapsed ? "justify-center" : "justify-between"}`}>
+      <div
+        className={`p-4 border-t border-white/10 flex items-center transition-all duration-300 ${collapsed ? "justify-center" : "justify-between"}`}
+      >
         {!collapsed && (
-          <p className="text-xs text-zinc-500 italic truncate">Em desenvolvimento</p>
+          <p className="text-xs text-zinc-500 italic truncate">
+            Em desenvolvimento
+          </p>
         )}
         <AnimateIcon animateOnHover>
           <button

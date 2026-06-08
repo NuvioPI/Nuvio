@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 };
 
 import { Playfair_Display, DM_Sans } from "next/font/google";
+import Link from "next/dist/client/link";
 
 const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
@@ -112,12 +113,14 @@ export default function LoginPage() {
             </div>
 
             {/* botão */}
-            <button
-              type="button"
-              className="w-full h-[44px] bg-[#0f6b2e] hover:bg-[#2fae5a] text-white rounded-[10px] text-sm font-medium transition-colors mt-2"
-            >
-              Entrar no painel
-            </button>
+            <Link href="/admin/dashboard" passHref>
+              <button
+                type="button"
+                className="w-full h-[44px] bg-[#0f6b2e] hover:bg-[#2fae5a] text-white rounded-[10px] text-sm font-medium transition-colors mt-2"
+              >
+                Entrar no painel
+              </button>
+            </Link>
 
             {/* rodapé */}
             <div className="pt-5 border-t border-(--border) mt-2">

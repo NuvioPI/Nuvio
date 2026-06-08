@@ -1,72 +1,46 @@
 "use client";
 
+import Link from "next/link";
+
 import Image from "next/image";
-import {
-    useEffect,
-    useRef,
-    useState
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function Profile() {
     const [open, setOpen] = useState(false);
 
-    const dropdownRef =
-        useRef<HTMLDivElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        function handleClickOutside(
-            event: MouseEvent
-        ) {
+        function handleClickOutside(event: MouseEvent) {
             if (
                 dropdownRef.current &&
-                !dropdownRef.current.contains(
-                    event.target as Node
-                )
+                !dropdownRef.current.contains(event.target as Node)
             ) {
                 setOpen(false);
             }
         }
 
-        function handleEscape(
-            event: KeyboardEvent
-        ) {
+        function handleEscape(event: KeyboardEvent) {
             if (event.key === "Escape") {
                 setOpen(false);
             }
         }
 
-        document.addEventListener(
-            "mousedown",
-            handleClickOutside
-        );
+        document.addEventListener("mousedown", handleClickOutside);
 
-        document.addEventListener(
-            "keydown",
-            handleEscape
-        );
+        document.addEventListener("keydown", handleEscape);
 
         return () => {
-            document.removeEventListener(
-                "mousedown",
-                handleClickOutside
-            );
+            document.removeEventListener("mousedown", handleClickOutside);
 
-            document.removeEventListener(
-                "keydown",
-                handleEscape
-            );
+            document.removeEventListener("keydown", handleEscape);
         };
     }, []);
 
     return (
-        <div
-            ref={dropdownRef}
-            className="relative"
-        >
+        <div ref={dropdownRef} className="relative">
             <button
-                onClick={() =>
-                    setOpen(!open)
-                }
+                onClick={() => setOpen(!open)}
                 className="
                     bg-white/50
                     rounded-full
@@ -123,23 +97,29 @@ export function Profile() {
                         z-50
                     "
                 >
-                    <button className="dropdown-item">
+                    <Link href="/perfil" className="dropdown-item block w-full">
                         Meu Perfil
-                    </button>
+                    </Link>
 
-                    <button className="dropdown-item">
+                    <Link href="/portal-cliente" className="dropdown-item block w-full">
                         Portal do Cliente
-                    </button>
+                    </Link>
 
-                    <button
+                    <Link href="/admin/login" className="dropdown-item block w-full">
+                        Admin
+                    </Link>
+
+                    <Link
+                        href="/"
                         className="
-                            dropdown-item
-                            text-red-500
-                        "
+                        block
+                        dropdown-item
+                        text-red-500
+                        w-full"
                     >
                         Sair
-                    </button>
-                    </div>
+                    </Link>
+                </div>
             )}
         </div>
     );
