@@ -1,6 +1,4 @@
-// app/admin/login/page.tsx
-
-import type { Metadata } from "next/metadata";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Nuvio | Admin",
