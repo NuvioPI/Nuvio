@@ -1,6 +1,6 @@
 // app/admin/dashboard/page.tsx
 import Link from "next/link";
-import type { Metadata } from "next/metadata";
+import type { Metadata } from "next";
 import { Playfair_Display, DM_Sans } from "next/font/google";
 
 const playfair = Playfair_Display({ subsets: ["latin"], style: ["italic"] });
