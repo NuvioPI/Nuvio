@@ -4,7 +4,7 @@ class JWT
 {
     private static $secret = 'nuvio_secret_key_2025_troque_isso';
     private static $algoritmo = 'HS256';
-    private static $expiracao = 86400; // 24 horas em segundos
+    private static $expiracao = 28800; // 8 horas em segundos
 
     public static function gerar($payload)
     {
