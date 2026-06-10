@@ -1,14 +1,14 @@
 CREATE TABLE SLA (
     idSLA INT PRIMARY KEY AUTO_INCREMENT,
     nomeSLA VARCHAR(75) NOT NULL,
-    tempoResposta INT NOT NULL,
-    tempoResolucao INT NOT NULL,
-    descricao VARCHAR(100) NOT NULL
+    tempoRespostaMinutos INT,
+    tempoResolucaoMinutos INT,
+    descricao VARCHAR(255) NOT NULL
 );
  
 CREATE TABLE tipoUsuario (
     idtipoUsuario INT PRIMARY KEY AUTO_INCREMENT,
-    descricao VARCHAR(50) NOT NULL,
+    descricao VARCHAR(255) NOT NULL,
     CONSTRAINT ck_descricao
         CHECK (descricao IN ('Cliente', 'Técnico', 'Administrador'))
 );
@@ -16,14 +16,14 @@ CREATE TABLE tipoUsuario (
 CREATE TABLE Categoria (
     idCategoria INT PRIMARY KEY AUTO_INCREMENT,
     nomeCategoria VARCHAR(55) NOT NULL,
-    descricao VARCHAR(45) NOT NULL
+    descricao VARCHAR(255) NOT NULL
 );
  
 CREATE TABLE Usuario (
     idUsuario INT PRIMARY KEY AUTO_INCREMENT,
     idtipoUsuario INT NOT NULL,
     nome VARCHAR(85) NOT NULL,
-    email VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
     senhaHash VARCHAR(155) NOT NULL,
     cargo VARCHAR(55) NOT NULL,
     setor VARCHAR(55) NOT NULL,
@@ -66,10 +66,12 @@ CREATE TABLE Ticket (
     idSLA INT NOT NULL,
  
     titulo VARCHAR(75) NOT NULL,
+    descricao TEXT NOT NULL,
     statusTicket VARCHAR(45) NOT NULL,
     prioridade VARCHAR(10) NOT NULL,
  
     dataAbertura DATETIME NOT NULL,
+    DEFAULT CURRENT_TIMESTAMP,
     dataFechamento DATETIME NULL,
  
     CONSTRAINT ck_prioridade
@@ -99,7 +101,7 @@ CREATE TABLE respostaTicket (
     idRespostaTicket INT PRIMARY KEY AUTO_INCREMENT,
     idUsuario INT NOT NULL,
     idTicket INT NOT NULL,
-    msgTicket VARCHAR(755),
+    msgTicket TEXT NOT NULL,
  
     dataResposta DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
  
@@ -116,8 +118,11 @@ CREATE TABLE anexo (
     idAnexo INT PRIMARY KEY AUTO_INCREMENT,
     idTicket INT NOT NULL,
  
-    nomeArquivo VARCHAR(100),
-    caminhoArquivo VARCHAR(255),
+    nomeArquivo VARCHAR(100) NOT NULL,
+    caminhoArquivo VARCHAR(255) NOT NULL,
+    tipoArquivo VARCHAR(50),
+    tamanhoArquivo BIGINT,
+    dataUpload DATETIME DEFAULT CURRENT_TIMESTAMP,
  
     CONSTRAINT fk_anexo_ticket
         FOREIGN KEY (idTicket)
@@ -144,4 +149,11 @@ CREATE TABLE avaliacaoTicket (
     CONSTRAINT fk_avaliacaoTicket_usuario
         FOREIGN KEY (idUsuario)
         REFERENCES Usuario(idUsuario)
+ 
+        CONSTRAINT ck_datas_ticket
+CHECK (
+    dataFechamento IS NULL
+    OR dataFechamento >= dataAbertura
+)
+       
 );
