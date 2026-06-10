@@ -76,7 +76,7 @@ if ($recurso === 'categorias') {
 
 // --- SLA ---
 if ($recurso === 'sla') {
-    $controller = new SlaController();
+    $controller = new SLAController();
     if ($method === 'GET' && !$id)      $controller->index();
     elseif ($method === 'GET' && $id)   $controller->show($id);
     elseif ($method === 'POST')         $controller->store();
