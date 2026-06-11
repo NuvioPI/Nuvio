@@ -55,19 +55,14 @@ const inputClasses =
   "w-full px-3.5 py-2.5 rounded-lg border border-(--border) bg-(--background) text-(--foreground) text-sm outline-none focus:border-(--ring) transition-colors";
 
 const TABS = [
-  { id: "geral", icon: "", label: "Geral" },
+  // Itens de navegação de administrador foram removidos para focar na visão do usuário.
   { id: "perfil", icon: "", label: "Perfil" },
   { id: "notificacoes", icon: "", label: "Notificações" },
-  { id: "tickets", icon: "", label: "Tickets" },
-  { id: "sla", icon: "", label: "SLA" },
-  { id: "categorias", icon: "", label: "Categorias" },
-  { id: "integracoes", icon: "", label: "Integrações" },
   { id: "seguranca", icon: "", label: "Segurança" },
-  { id: "logs", icon: "", label: "Logs do sistema" },
 ];
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("geral");
+  const [activeTab, setActiveTab] = useState("perfil"); // A aba 'perfil' agora é a inicial.
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -143,93 +138,72 @@ export default function SettingsPage() {
               exit={{ opacity: 0, y: -5 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
             >
-              {/* ABA GERAL */}
-              {activeTab === "geral" && (
-                <div className="bg-(--card) border border-(--card-border) rounded-(--radius) p-6 shadow-(--shadow) mb-6">
-                  <h2 className="text-base font-semibold mb-1">Geral</h2>
-                  <p className="text-(--muted-foreground) text-[13px] mb-6">
-                    Configurações básicas do sistema.
-                  </p>
-
-                  <FormRow label="Nome da empresa" description="Este nome será exibido para os usuários do sistema.">
-                    <input type="text" defaultValue="Help Desk" className={inputClasses} />
-                  </FormRow>
-
-                  <FormRow label="Fuso horário" description="Selecione o fuso horário padrão do sistema.">
-                    <select className={inputClasses}>
-                      <option>(GMT-03:00) Brasilia</option>
-                    </select>
-                  </FormRow>
-
-                  <FormRow label="Idioma" description="Selecione o idioma do sistema.">
-                    <select className={inputClasses}>
-                      <option>Português (Brasil)</option>
-                    </select>
-                  </FormRow>
-
-                  <FormRow label="Formato de data" description="Escolha o formato de data que será exibido no sistema.">
-                    <select className={inputClasses}>
-                      <option>DD/MM/YYYY</option>
-                    </select>
-                  </FormRow>
-
-                  <FormRow label="Formato de hora" description="Escolha o formato de hora que será exibido no sistema.">
-                    <select className={inputClasses}>
-                      <option>24 horas</option>
-                      <option>12 horas (AM/PM)</option>
-                    </select>
-                  </FormRow>
-
-                  <FormRow label="Moeda" description="Selecione a moeda padrão para relatórios e exportações." noBorder>
-                    <select className={inputClasses}>
-                      <option>BRL (R$)</option>
-                    </select>
-                  </FormRow>
-
-                  <div className="flex justify-end mt-6 pt-6 border-t border-(--muted)">
-                    <button className="bg-(--primary) text-(--primary-foreground) px-5 py-2.5 rounded-lg font-semibold cursor-pointer text-sm transition-colors hover:bg-(--primary-hover)">
-                      💾 Salvar alterações
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* ABA PERFIL */}
               {activeTab === "perfil" && (
-                <div className="bg-(--card) border border-(--card-border) rounded-(--radius) p-6 shadow-(--shadow) mb-6">
-                  <h2 className="text-base font-semibold mb-1">Perfil</h2>
-                  <p className="text-(--muted-foreground) text-[13px] mb-6">
-                    Gerencie suas informações pessoais e credenciais.
-                  </p>
+                <>
+                  <div className="bg-(--card) border border-(--card-border) rounded-(--radius) p-6 shadow-(--shadow) mb-6">
+                    <h2 className="text-base font-semibold mb-1">Perfil</h2>
+                    <p className="text-(--muted-foreground) text-[13px] mb-6">
+                      Gerencie suas informações pessoais e credenciais.
+                    </p>
 
-                  <FormRow label="Nome Completo" description="Como você será identificado na plataforma.">
-                    <input type="text" defaultValue="Lucas Oliveira" className={inputClasses} />
-                  </FormRow>
+                    <FormRow label="Nome Completo" description="Como você será identificado na plataforma.">
+                      <input type="text" defaultValue="Lucas Oliveira" className={inputClasses} />
+                    </FormRow>
 
-                  <FormRow label="E-mail Profissional" description="E-mail utilizado para login e alertas.">
-                    <input type="email" defaultValue="lucas@exemplo.com" className={inputClasses} />
-                  </FormRow>
+                    <FormRow label="E-mail Profissional" description="E-mail utilizado para login e alertas.">
+                      <input type="email" defaultValue="lucas@exemplo.com" className={inputClasses} />
+                    </FormRow>
 
-                  <FormRow label={isEditingPassword ? "Nova Senha" : "Senha de Acesso"} description={isEditingPassword ? "Digite uma senha forte com no mínimo 8 caracteres." : "Gerencie a senha usada para acessar o sistema."} noBorder>
-                    {isEditingPassword ? (
-                      <input autoFocus type="password" placeholder="Digite sua nova senha" className={inputClasses} />
-                    ) : (
-                      <div className="flex items-center justify-between bg-(--muted) px-3 py-2 rounded-lg border border-(--border)">
-                        <span className="font-mono tracking-widest">••••••••</span>
-                        <button
-                          onClick={() => setIsEditingPassword(true)}
-                          className="bg-(--card) border border-(--border) text-(--foreground) px-3 py-1.5 rounded-md font-semibold cursor-pointer text-xs transition-colors hover:bg-(--muted)"
-                        >
-                          Editar
-                        </button>
+                    <FormRow label={isEditingPassword ? "Nova Senha" : "Senha de Acesso"} description={isEditingPassword ? "Digite uma senha forte com no mínimo 8 caracteres." : "Gerencie a senha usada para acessar o sistema."} noBorder>
+                      {isEditingPassword ? (
+                        <input autoFocus type="password" placeholder="Digite sua nova senha" className={inputClasses} />
+                      ) : (
+                        <div className="flex items-center justify-between bg-(--muted) px-3 py-2 rounded-lg border border-(--border)">
+                          <span className="font-mono tracking-widest">••••••••</span>
+                          <button
+                            onClick={() => setIsEditingPassword(true)}
+                            className="bg-(--card) border border-(--border) text-(--foreground) px-3 py-1.5 rounded-md font-semibold cursor-pointer text-xs transition-colors hover:bg-(--muted)"
+                          >
+                            Editar
+                          </button>
+                        </div>
+                      )}
+                    </FormRow>
+
+                    <div className="flex justify-end mt-6 pt-6 border-t border-(--muted)">
+                      <button className="bg-(--primary) text-(--primary-foreground) px-5 py-2.5 rounded-lg font-semibold cursor-pointer text-sm transition-colors hover:bg-(--primary-hover)">
+                        {isEditingPassword ? "💾 Atualizar dados" : "💾 Atualizar perfil"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Propriedade da conta */}
+                  <div className="bg-(--card) border border-red-500/40 rounded-(--radius) p-6 shadow-(--shadow) mb-6">
+                    <h3 className="text-base font-semibold text-red-500 mb-2">Propriedade da conta</h3>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold mb-0.5 text-(--card-foreground)">Excluir sua conta</label>
+                        <span className="text-xs text-(--muted-foreground)">Esta ação é irreversível. Todos os seus dados, tickets e informações serão permanentemente removidos.</span>
                       </div>
-                    )}
-                  </FormRow>
+                      <button className="bg-red-600/90 text-white px-4 py-2 rounded-md font-semibold cursor-pointer text-[13px] transition-colors hover:bg-red-700 whitespace-nowrap">
+                        Excluir conta
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
 
-                  <div className="flex justify-end mt-6 pt-6 border-t border-(--muted)">
-                    <button className="bg-(--primary) text-(--primary-foreground) px-5 py-2.5 rounded-lg font-semibold cursor-pointer text-sm transition-colors hover:bg-(--primary-hover)">
-                      {isEditingPassword ? "💾 Atualizar dados" : "💾 Atualizar perfil"}
-                    </button>
+              {/* ABA NOTIFICAÇÕES (Placeholder) */}
+              {activeTab === "notificacoes" && (
+                <div className="bg-(--card) border border-(--card-border) rounded-(--radius) p-6 shadow-(--shadow) mb-6">
+                  <h2 className="text-base font-semibold mb-1">Notificações</h2>
+                  <p className="text-(--muted-foreground) text-[13px] mb-6">
+                    Escolha como e quando você deseja ser notificado.
+                  </p>
+                  {/* Conteúdo do formulário de notificações virá aqui */}
+                  <div className="text-center py-10 text-(--muted-foreground)">
+                    <p>Configurações de notificação em breve.</p>
                   </div>
                 </div>
               )}
@@ -257,27 +231,6 @@ export default function SettingsPage() {
                     </div>
                     <button className="bg-transparent border border-(--border) text-(--foreground) px-4 py-2 rounded-md font-semibold cursor-pointer text-[13px] transition-colors hover:bg-(--muted)">
                       Revisar Dispositivos
-                    </button>
-                  </div>
-                </div>
-              )}
-              
-              {/* ABA TICKETS (Exemplo extra incluído no html) */}
-              {activeTab === "tickets" && (
-                <div className="bg-(--card) border border-(--card-border) rounded-(--radius) p-6 shadow-(--shadow) mb-6">
-                  <h2 className="text-base font-semibold mb-1">Tickets</h2>
-                  <p className="text-(--muted-foreground) text-[13px] mb-6">Configure as regras de triagem e encerramento automático.</p>
-                  
-                  <FormRow label="Encerramento Automático" description="Dias após a resolução para fechar o ticket." noBorder>
-                    <select className={inputClasses}>
-                      <option>3 dias</option>
-                      <option>5 dias</option>
-                    </select>
-                  </FormRow>
-                  
-                  <div className="flex justify-end mt-6 pt-6 border-t border-(--muted)">
-                    <button className="bg-(--primary) text-(--primary-foreground) px-5 py-2.5 rounded-lg font-semibold cursor-pointer text-sm transition-colors hover:bg-(--primary-hover)">
-                      💾 Salvar regras
                     </button>
                   </div>
                 </div>
