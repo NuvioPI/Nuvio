@@ -73,6 +73,11 @@ export default function SettingsPage() {
   const [showTips, setShowTips] = useState(true);
   const [animations, setAnimations] = useState(true);
 
+  // Estados para a aba de notificações
+  const [notifyOnNewTicket, setNotifyOnNewTicket] = useState(true);
+  const [notifyOnTicketUpdate, setNotifyOnTicketUpdate] = useState(true);
+  const [notifyOnTicketClose, setNotifyOnTicketClose] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -201,9 +206,14 @@ export default function SettingsPage() {
                   <p className="text-(--muted-foreground) text-[13px] mb-6">
                     Escolha como e quando você deseja ser notificado.
                   </p>
-                  {/* Conteúdo do formulário de notificações virá aqui */}
-                  <div className="text-center py-10 text-(--muted-foreground)">
-                    <p>Configurações de notificação em breve.</p>
+                  <h3 className="text-sm font-semibold text-(--card-foreground) border-b border-(--muted) pb-2 mb-4">Notificações por E-mail</h3>
+                  <div className="flex flex-col gap-5">
+                    <div className="flex justify-between items-center"><div className="pr-4"><label className="block text-sm font-semibold mb-0.5">Novo ticket atribuído a mim</label><span className="text-xs text-(--muted-foreground)">Receber um e-mail quando um novo ticket for sua responsabilidade.</span></div><Switch checked={notifyOnNewTicket} onChange={() => setNotifyOnNewTicket(!notifyOnNewTicket)} /></div>
+                    <div className="flex justify-between items-center"><div className="pr-4"><label className="block text-sm font-semibold mb-0.5">Atualização em um ticket que sigo</label><span className="text-xs text-(--muted-foreground)">Receber um e-mail quando houver uma nova resposta ou alteração.</span></div><Switch checked={notifyOnTicketUpdate} onChange={() => setNotifyOnTicketUpdate(!notifyOnTicketUpdate)} /></div>
+                    <div className="flex justify-between items-center"><div className="pr-4"><label className="block text-sm font-semibold mb-0.5">Ticket encerrado</label><span className="text-xs text-(--muted-foreground)">Receber um e-mail quando um ticket que você abriu for encerrado.</span></div><Switch checked={notifyOnTicketClose} onChange={() => setNotifyOnTicketClose(!notifyOnTicketClose)} /></div>
+                  </div>
+                  <div className="flex justify-end mt-6 pt-6 border-t border-(--muted)">
+                    <button className="bg-(--primary) text-(--primary-foreground) px-5 py-2.5 rounded-lg font-semibold cursor-pointer text-sm transition-colors hover:bg-(--primary-hover)">💾 Salvar preferências</button>
                   </div>
                 </div>
               )}
@@ -212,26 +222,15 @@ export default function SettingsPage() {
               {activeTab === "seguranca" && (
                 <div className="bg-(--card) border border-(--card-border) rounded-(--radius) p-6 shadow-(--shadow) mb-6">
                   <h2 className="text-base font-semibold mb-1">Segurança</h2>
-                  <p className="text-(--muted-foreground) text-[13px] mb-6">Proteja sua conta e gerencie onde você está conectado.</p>
+                  <p className="text-(--muted-foreground) text-[13px] mb-6">Proteja sua conta com ferramentas como a autenticação de dois fatores.</p>
 
                   <h3 className="text-sm font-semibold text-(--card-foreground) border-b border-(--muted) pb-2 mb-4">Autenticação</h3>
-                  <div className="flex justify-between items-center py-2 mb-4">
+                  <div className="flex justify-between items-center py-2">
                     <div>
                       <label className="block text-sm font-semibold mb-0.5">Autenticação de Dois Fatores (2FA)</label>
                       <span className="text-xs text-(--muted-foreground)">Exige um código extra gerado no seu celular ao fazer login.</span>
                     </div>
                     <Switch checked={twoFactor} onChange={() => setTwoFactor(!twoFactor)} />
-                  </div>
-
-                  <h3 className="text-sm font-semibold text-(--card-foreground) border-b border-(--muted) pb-2 mt-8 mb-4">Check-up de Segurança</h3>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold mb-0.5">Sessões Ativas</label>
-                      <span className="text-xs text-(--muted-foreground)">Verifique os dispositivos que têm acesso à sua conta.</span>
-                    </div>
-                    <button className="bg-transparent border border-(--border) text-(--foreground) px-4 py-2 rounded-md font-semibold cursor-pointer text-[13px] transition-colors hover:bg-(--muted)">
-                      Revisar Dispositivos
-                    </button>
                   </div>
                 </div>
               )}
