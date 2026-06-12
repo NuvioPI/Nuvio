@@ -1,14 +1,16 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 
-export default function NotFoundPage() {
+export default function NotFound() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex flex-col justify-between font-sans antialiased selection:bg-[#1a7a4a] selection:text-white transition-colors duration-300">
-      
+      <title>Tá nas nuvens?</title>
+
       {/* Header / Topo */}
       <header className="p-6 max-w-7xl w-full mx-auto flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2 text-[var(--primary)] hover:opacity-90 transition-opacity" aria-label="Nuvio Home">
+        <Link href="/" className="flex items-center gap-2 text-[var(--primary)] hover:opacity-90 transition-opacity" aria-label="Nuvio Home">
           {/* Logo SVG fornecido */}
           <svg
             width="40"
@@ -24,7 +26,7 @@ export default function NotFoundPage() {
             />
           </svg>
           <span className="text-xl font-bold tracking-tight text-[var(--foreground)]">nuvio</span>
-        </a>
+        </Link>
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-[var(--online)] animate-pulse"></span>
           <span className="text-sm text-[var(--muted-foreground)] font-medium">Todos os sistemas operacionais</span>
@@ -47,7 +49,7 @@ export default function NotFoundPage() {
         <h2 className="text-2xl md:text-3xl font-bold mb-4 tracking-tight">
           Essa página foi arquivada ou mudou de fila.
         </h2>
-        
+
         <p className="text-[var(--muted-foreground)] mb-8 text-base md:text-lg leading-relaxed">
           O ticket, base de conhecimento ou rota que você tentou acessar não está disponível no momento. Que tal abrir uma busca interna para resolver isso?
         </p>
@@ -55,13 +57,13 @@ export default function NotFoundPage() {
         {/* Barra de Busca Contextual de Help Desk */}
         <div className="w-full max-w-md bg-[var(--card)] border border-[var(--card-border)] rounded-[var(--radius)] p-2 shadow-[var(--shadow)] mb-8 transition-all duration-300 focus-within:border-[var(--ring)]">
           <form onSubmit={(e) => e.preventDefault()} className="flex gap-2">
-            <input 
-              type="text" 
-              placeholder="Pesquisar por artigos, chamados ou ajuda..." 
+            <input
+              type="text"
+              placeholder="Pesquisar por artigos, chamados ou ajuda..."
               className="flex-1 bg-[var(--searchbar-bg)] border border-[var(--searchbar-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--searchbar-text)] placeholder-[var(--searchbar-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--searchbar-focus-ring)] transition-all"
             />
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="bg-[var(--button-bg)] hover:bg-[var(--button-hover-bg)] text-[var(--button-foreground)] px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
             >
               Buscar
@@ -71,18 +73,18 @@ export default function NotFoundPage() {
 
         {/* Botões de Ação Dinâmicos */}
         <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
-          <a 
-            href="/" 
+          <Link
+            href="/"
             className="inline-flex items-center justify-center bg-[var(--button-bg)] hover:bg-[var(--button-hover-bg)] text-[var(--button-foreground)] px-6 py-3 rounded-[var(--radius)] text-sm font-semibold transition-colors shadow-sm"
           >
             Voltar ao Dashboard
-          </a>
-          <a 
-            href="/suporte" 
+          </Link>
+          <Link
+            href="/suporte"
             className="inline-flex items-center justify-center bg-[var(--secondary-button-bg)] hover:bg-[var(--secondary-button-hover-bg)] text-[var(--secondary-button-foreground)] px-6 py-3 rounded-[var(--radius)] text-sm font-semibold transition-colors"
           >
             Falar com um Atendente
-          </a>
+          </Link>
         </div>
       </main>
 

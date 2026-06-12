@@ -9,12 +9,7 @@ const geist = Geist({
   variable: "--font-sans",
 });
 
-export const metadata: Metadata = {
-  title: "Admin - Nuvio",
-  icons: {
-    icon: "/icons/admin.ico",
-  },
-};
+
 
 export default function RootLayout({
   children,
