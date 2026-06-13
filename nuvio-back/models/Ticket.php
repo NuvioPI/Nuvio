@@ -201,6 +201,77 @@ class Ticket
         return $stmt->execute();
     }
 
+    public function update()
+    {
+        $fields = [];
+
+        if ($this->titulo !== null) {
+            $this->titulo = htmlspecialchars(strip_tags($this->titulo));
+            $fields[] = "titulo = :titulo";
+        }
+
+        if ($this->statusTicket !== null) {
+            $this->statusTicket = htmlspecialchars(strip_tags($this->statusTicket));
+            $fields[] = "statusTicket = :statusTicket";
+        }
+
+        if ($this->prioridade !== null) {
+            $this->prioridade = htmlspecialchars(strip_tags($this->prioridade));
+            $fields[] = "prioridade = :prioridade";
+        }
+
+        if ($this->idTecnico !== null) {
+            $fields[] = "idTecnico = :idTecnico";
+        }
+
+        if ($this->idCategoria !== null) {
+            $fields[] = "idCategoria = :idCategoria";
+        }
+
+        if ($this->idSLA !== null) {
+            $fields[] = "idSLA = :idSLA";
+        }
+
+        if (empty($fields)) {
+            return false;
+        }
+
+        if (strtolower($this->statusTicket) === 'fechado') {
+            $fields[] = "dataFechamento = NOW()";
+        }
+
+        $query = "UPDATE " . $this->tabela . " SET " . implode(', ', $fields) . " WHERE idTicket = :idTicket";
+        $stmt = $this->conn->prepare($query);
+
+        if ($this->titulo !== null) {
+            $stmt->bindParam(':titulo', $this->titulo);
+        }
+
+        if ($this->statusTicket !== null) {
+            $stmt->bindParam(':statusTicket', $this->statusTicket);
+        }
+
+        if ($this->prioridade !== null) {
+            $stmt->bindParam(':prioridade', $this->prioridade);
+        }
+
+        if ($this->idTecnico !== null) {
+            $stmt->bindParam(':idTecnico', $this->idTecnico, PDO::PARAM_INT);
+        }
+
+        if ($this->idCategoria !== null) {
+            $stmt->bindParam(':idCategoria', $this->idCategoria, PDO::PARAM_INT);
+        }
+
+        if ($this->idSLA !== null) {
+            $stmt->bindParam(':idSLA', $this->idSLA, PDO::PARAM_INT);
+        }
+
+        $stmt->bindParam(':idTicket', $this->idTicket, PDO::PARAM_INT);
+
+        return $stmt->execute();
+    }
+
     // Fechar ticket (define dataFechamento)
     public function fechar()
     {
