@@ -613,7 +613,7 @@ export default function LandingPage() {
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
               Tudo que seu suporte precisa,{" "}
               <br className="hidden md:block" />
-              <span className="bg-[var(--gradient-primary)] bg-clip-text text-transparent">
+              <span className="bg-[var(--gradient-primary)] bg-clip-text">
                 em um só lugar
               </span>
             </h2>
@@ -815,7 +815,7 @@ export default function LandingPage() {
             </span>
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
               Quem usa,{" "}
-              <span className="bg-[var(--gradient-primary)] bg-clip-text text-transparent">
+              <span className="bg-[var(--gradient-primary)] bg-clip-text ">
                 recomenda
               </span>
             </h2>

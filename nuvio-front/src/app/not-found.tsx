@@ -1,16 +1,24 @@
-"use client";
-
 import React from 'react';
 import Link from 'next/link';
+import type { Metadata } from "next";
+import { NotFoundSearchForm } from "@/components/404/not-found-search-form";
 
+
+export const metadata: Metadata = {
+  title: "Tá nas nuvens?",
+  icons: {
+    icon: "/404.png",
+  },
+};
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex flex-col justify-between font-sans antialiased selection:bg-[#1a7a4a] selection:text-white transition-colors duration-300">
-      <title>Tá nas nuvens?</title>
 
       {/* Header / Topo */}
       <header className="p-6 max-w-7xl w-full mx-auto flex items-center justify-between">
+
         <Link href="/" className="flex items-center gap-2 text-[var(--primary)] hover:opacity-90 transition-opacity" aria-label="Nuvio Home">
+
           {/* Logo SVG fornecido */}
           <svg
             width="40"
@@ -25,6 +33,7 @@ export default function NotFound() {
               fill="currentColor"
             />
           </svg>
+
           <span className="text-xl font-bold tracking-tight text-[var(--foreground)]">nuvio</span>
         </Link>
         <div className="flex items-center gap-2">
@@ -42,7 +51,7 @@ export default function NotFound() {
         </div>
 
         {/* Número 404 Estilizado */}
-        <h1 className="text-8xl md:text-9xl font-black tracking-tighter mb-2 bg-[var(--gradient-primary)] bg-clip-text text-transparent drop-shadow-sm">
+        <h1 className="text-8xl md:text-9xl font-black tracking-tighter mb-2 bg-[var(--gradient-primary)] bg-clip-text drop-shadow-sm">
           404
         </h1>
 
@@ -56,19 +65,7 @@ export default function NotFound() {
 
         {/* Barra de Busca Contextual de Help Desk */}
         <div className="w-full max-w-md bg-[var(--card)] border border-[var(--card-border)] rounded-[var(--radius)] p-2 shadow-[var(--shadow)] mb-8 transition-all duration-300 focus-within:border-[var(--ring)]">
-          <form onSubmit={(e) => e.preventDefault()} className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Pesquisar por artigos, chamados ou ajuda..."
-              className="flex-1 bg-[var(--searchbar-bg)] border border-[var(--searchbar-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--searchbar-text)] placeholder-[var(--searchbar-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--searchbar-focus-ring)] transition-all"
-            />
-            <button
-              type="submit"
-              className="bg-[var(--button-bg)] hover:bg-[var(--button-hover-bg)] text-[var(--button-foreground)] px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
-            >
-              Buscar
-            </button>
-          </form>
+          <NotFoundSearchForm />
         </div>
 
         {/* Botões de Ação Dinâmicos */}
