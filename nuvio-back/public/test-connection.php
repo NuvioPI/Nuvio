@@ -1,4 +1,9 @@
 <?php
+$caPath = __DIR__ . '/../ca.pem';
+echo "Caminho: $caPath<br>";
+echo "Existe? " . (file_exists($caPath) ? 'SIM' : 'NÃO') . "<br>";
+echo "Legível? " . (is_readable($caPath) ? 'SIM' : 'NÃO') . "<br><br>";
+
 require_once __DIR__ . '/../config/database.php';
 
 $db = new DB();
