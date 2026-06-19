@@ -2,94 +2,51 @@
 
 class Usuario
 {
-    private $conn;
-    private $tabela = "usuario";
-
+    private $db;
     public $idUsuario;
+    public $idtipoUsuario;
     public $nome;
     public $email;
     public $senhaHash;
+    public $cargo;
+    public $setor;
 
-    public function __construct($conexao)
+    public function __construct($db)
     {
-        $this->conn = $conexao;
+        $this->db = $db;
     }
 
-    public function getAll()
+    public function buscarPorEmail($email)
     {
-        $query = "SELECT idUsuario, nome, email FROM " . $this->tabela;
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt;
+        $stmt = $this->db->prepare("SELECT * FROM Usuario WHERE email = ?");
+        $stmt->execute([$email]);
+        return $stmt->fetch();
     }
 
-    public function get()
+    public function buscarPorId($id)
     {
-        if (!$this->idUsuario) return false;
-
-        $query = "SELECT idUsuario, nome, email FROM " . $this->tabela . " WHERE idUsuario = ? LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$this->idUsuario]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$row) return false;
-
-        $this->idUsuario = $row['idUsuario'];
-        $this->nome      = $row['nome'];
-        $this->email     = $row['email'];
-
-        return true;
-    }
-
-    public function find($id)
-    {
-        $query = "SELECT idUsuario, nome, email FROM " . $this->tabela . " WHERE idUsuario = ? LIMIT 1";
-        $stmt = $this->conn->prepare($query);
+        $stmt = $this->db->prepare("SELECT * FROM Usuario WHERE idUsuario = ?");
         $stmt->execute([$id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetch();
     }
 
-    public function create()
+    public function criar()
     {
-        $query = "INSERT INTO " . $this->tabela . " (nome, email, senhaHash) VALUES (?, ?, ?)";
-        $stmt = $this->conn->prepare($query);
-
-        $this->nome  = htmlspecialchars(strip_tags($this->nome));
-        $this->email = htmlspecialchars(strip_tags($this->email));
-        // senhaHash não passa por htmlspecialchars — já vem como hash do password_hash()
-
-        $success = $stmt->execute([$this->nome, $this->email, $this->senhaHash]);
-
-        if ($success) {
-            $this->idUsuario = $this->conn->lastInsertId();
-        }
-
-        return $success;
+        $stmt = $this->db->prepare("INSERT INTO Usuario (idtipoUsuario, nome, email, senhaHash, cargo, setor) VALUES (?, ?, ?, ?, ?, ?)");
+        return $stmt->execute([
+            $this->idtipoUsuario,
+            $this->nome,
+            $this->email,
+            $this->senhaHash,
+            $this->cargo,
+            $this->setor
+        ]);
     }
 
-    public function update()
+    public function emailExiste($email)
     {
-        $query = "UPDATE " . $this->tabela . " SET nome = ?, email = ? WHERE idUsuario = ?";
-        $stmt = $this->conn->prepare($query);
-
-        $this->nome  = htmlspecialchars(strip_tags($this->nome));
-        $this->email = htmlspecialchars(strip_tags($this->email));
-
-        return $stmt->execute([$this->nome, $this->email, $this->idUsuario]);
-    }
-
-    public function updateSenha($novaSenhaHash)
-    {
-        $query = "UPDATE " . $this->tabela . " SET senhaHash = ? WHERE idUsuario = ?";
-        $stmt = $this->conn->prepare($query);
-        return $stmt->execute([$novaSenhaHash, $this->idUsuario]);
-    }
-
-    public function delete()
-    {
-        $query = "DELETE FROM " . $this->tabela . " WHERE idUsuario = ?";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$this->idUsuario]);
-        return $stmt->rowCount() > 0;
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM Usuario WHERE email = ?");
+        $stmt->execute([$email]);
+        return $stmt->fetchColumn() > 0;
     }
 }

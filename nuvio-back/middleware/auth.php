@@ -1,33 +1,33 @@
 <?php
 
-require_once __DIR__ . '/../config/jwt.php';
-
 function autenticar()
 {
-    $headers = getallheaders();
-
-    if (!isset($headers['Authorization']) && !isset($headers['authorization'])) {
+    $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    if (!preg_match('/^Bearer\s+(.+)$/i', $authHeader, $matches)) {
         http_response_code(401);
         echo json_encode(['erro' => 'Token não fornecido.']);
-        exit();
+        exit;
     }
 
-    $authHeader = $headers['Authorization'] ?? $headers['authorization'];
-
-    if (!str_starts_with($authHeader, 'Bearer ')) {
-        http_response_code(401);
-        echo json_encode(['erro' => 'Formato inválido. Use: Bearer {token}']);
-        exit();
-    }
-
-    $token = substr($authHeader, 7);
+    $token = $matches[1];
     $dados = JWT::validar($token);
 
     if (!$dados) {
         http_response_code(401);
         echo json_encode(['erro' => 'Token inválido ou expirado.']);
-        exit();
+        exit;
     }
 
-    return $dados; // retorna o payload: idUsuario, email, etc.
+    return $dados;
+}
+
+function autenticarAdmin()
+{
+    $dados = autenticar();
+    if (($dados['idtipoUsuario'] ?? 0) != 3) {
+        http_response_code(403);
+        echo json_encode(['erro' => 'Acesso negado. Apenas administradores.']);
+        exit;
+    }
+    return $dados;
 }

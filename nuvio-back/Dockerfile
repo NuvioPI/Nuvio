@@ -1,14 +1,13 @@
-FROM php:8.2-cli
+FROM php:8.2-apache
 
-# Instala dependências e a extensão pdo_mysql
 RUN apt-get update && apt-get install -y \
-    libssl-dev \
-    && docker-php-ext-install pdo pdo_mysql
+    libzip-dev \
+    zip \
+    unzip
 
-WORKDIR /app
+RUN docker-php-ext-install pdo pdo_mysql zip
 
-COPY . .
+COPY . /var/www/html/
 
-EXPOSE 10000
-
-CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-10000} -t public"]
+RUN mkdir -p /var/www/html/public && \
+    mv /var/www/html/public/index.php /var/www/html/index.php 2>/dev/null || true

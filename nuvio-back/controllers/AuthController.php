@@ -16,49 +16,6 @@ class AuthController
         $this->usuario = new Usuario($this->db);
     }
 
-    // POST /auth/registro
-    public function registro()
-    {
-        $body = json_decode(file_get_contents('php://input'), true);
-
-        if (
-            empty($body['nome']) ||
-            empty($body['email']) ||
-            empty($body['senha'])
-        ) {
-            http_response_code(400);
-            echo json_encode(['erro' => 'Nome, email e senha são obrigatórios.']);
-            return;
-        }
-
-        // Verificar se email já existe
-        if ($this->emailExiste($body['email'])) {
-            http_response_code(409);
-            echo json_encode(['erro' => 'Email já cadastrado.']);
-            return;
-        }
-
-        $this->usuario->nome = htmlspecialchars(strip_tags($body['nome']));
-        $this->usuario->email = htmlspecialchars(strip_tags($body['email']));
-        $this->usuario->senhaHash = password_hash($body['senha'], PASSWORD_BCRYPT);
-
-        if ($this->usuario->create()) {
-            http_response_code(201);
-            echo json_encode([
-                'mensagem' => 'Usuário criado com sucesso.',
-                'usuario' => [
-                    'id'    => $this->usuario->idUsuario,
-                    'nome'  => $this->usuario->nome,
-                    'email' => $this->usuario->email,
-                ]
-            ]);
-        } else {
-            http_response_code(500);
-            echo json_encode(['erro' => 'Erro ao criar usuário.']);
-        }
-    }
-
-    // POST /auth/login
     public function login()
     {
         $body = json_decode(file_get_contents('php://input'), true);
@@ -69,7 +26,7 @@ class AuthController
             return;
         }
 
-        $usuario = $this->buscarPorEmail($body['email']);
+        $usuario = $this->usuario->buscarPorEmail($body['email']);
 
         if (!$usuario) {
             http_response_code(401);
@@ -85,39 +42,73 @@ class AuthController
 
         $token = JWT::gerar([
             'idUsuario' => $usuario['idUsuario'],
-            'email'     => $usuario['email'],
-            'nome'      => $usuario['nome'],
+            'idtipoUsuario' => $usuario['idtipoUsuario'],
+            'email' => $usuario['email'],
+            'nome' => $usuario['nome'],
         ]);
 
-        http_response_code(200);
         echo json_encode([
             'mensagem' => 'Login realizado com sucesso.',
-            'token'    => $token,
-            'usuario'  => [
-                'id'    => $usuario['idUsuario'],
-                'nome'  => $usuario['nome'],
+            'token' => $token,
+            'usuario' => [
+                'id' => $usuario['idUsuario'],
+                'idtipoUsuario' => $usuario['idtipoUsuario'],
+                'nome' => $usuario['nome'],
                 'email' => $usuario['email'],
+                'cargo' => $usuario['cargo'],
+                'setor' => $usuario['setor'],
             ]
         ]);
     }
 
-    // -------------------------------------------------------
-    // Métodos privados auxiliares
-    // -------------------------------------------------------
-
-    private function buscarPorEmail($email)
+    public function registro()
     {
-        $query = "SELECT idUsuario, nome, email, senhaHash FROM usuario WHERE email = ? LIMIT 1";
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([$email]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $body = json_decode(file_get_contents('php://input'), true);
+
+        if (empty($body['nome']) || empty($body['email']) || empty($body['senha'])) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'Nome, email e senha são obrigatórios.']);
+            return;
+        }
+
+        if ($this->usuario->emailExiste($body['email'])) {
+            http_response_code(409);
+            echo json_encode(['erro' => 'Email já cadastrado.']);
+            return;
+        }
+
+        $this->usuario->idtipoUsuario = 1;
+        $this->usuario->nome = htmlspecialchars(strip_tags($body['nome']));
+        $this->usuario->email = htmlspecialchars(strip_tags($body['email']));
+        $this->usuario->senhaHash = password_hash($body['senha'], PASSWORD_BCRYPT);
+        $this->usuario->cargo = htmlspecialchars(strip_tags($body['cargo'] ?? ''));
+        $this->usuario->setor = htmlspecialchars(strip_tags($body['setor'] ?? ''));
+
+        if ($this->usuario->criar()) {
+            http_response_code(201);
+            echo json_encode(['mensagem' => 'Usuário criado com sucesso.']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['erro' => 'Erro ao criar usuário.']);
+        }
     }
 
-    private function emailExiste($email)
+    public function me()
     {
-        $query = "SELECT COUNT(*) FROM usuario WHERE email = ?";
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([$email]);
-        return $stmt->fetchColumn() > 0;
+        $auth = autenticar();
+        $usuario = $this->usuario->buscarPorId($auth['idUsuario']);
+        if ($usuario) {
+            echo json_encode([
+                'id' => $usuario['idUsuario'],
+                'idtipoUsuario' => $usuario['idtipoUsuario'],
+                'nome' => $usuario['nome'],
+                'email' => $usuario['email'],
+                'cargo' => $usuario['cargo'],
+                'setor' => $usuario['setor'],
+            ]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['erro' => 'Usuário não encontrado.']);
+        }
     }
 }
