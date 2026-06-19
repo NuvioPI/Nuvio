@@ -29,7 +29,7 @@ class DB
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::MYSQL_ATTR_SSL_CA => $this->ca_cert,
-                PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true,
+                PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
             ];
 
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);

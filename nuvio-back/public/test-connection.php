@@ -4,6 +4,11 @@ echo "Caminho: $caPath<br>";
 echo "Existe? " . (file_exists($caPath) ? 'SIM' : 'NÃO') . "<br>";
 echo "Legível? " . (is_readable($caPath) ? 'SIM' : 'NÃO') . "<br><br>";
 
+echo "Host: " . getenv('DB_HOST') . "<br>";
+echo "Port: " . getenv('DB_PORT') . "<br>";
+echo "DB: " . getenv('DB_NAME') . "<br>";
+echo "User: " . getenv('DB_USER') . "<br>";
+
 require_once __DIR__ . '/../config/database.php';
 
 $db = new DB();
