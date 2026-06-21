@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/jwt.php';
-require_once __DIR__ . '/../models/Usuario.php';
+require_once __DIR__ . '/../models/usuario.php';
 
 class AuthController
 {
