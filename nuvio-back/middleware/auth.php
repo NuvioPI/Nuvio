@@ -1,33 +1,100 @@
 <?php
 
+require_once __DIR__ . '/../config/jwt.php';
+
 function autenticar()
 {
-    $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-    if (!preg_match('/^Bearer\s+(.+)$/i', $authHeader, $matches)) {
+    $authHeader = obterCabecalhoAuthorization();
+
+    if (!$authHeader) {
         http_response_code(401);
         echo json_encode(['erro' => 'Token não fornecido.']);
-        exit;
+        exit();
     }
 
-    $token = $matches[1];
+    if (!str_starts_with($authHeader, 'Bearer ')) {
+        http_response_code(401);
+        echo json_encode(['erro' => 'Formato inválido. Use: Bearer {token}']);
+        exit();
+    }
+
+    $token = substr($authHeader, 7);
     $dados = JWT::validar($token);
 
     if (!$dados) {
         http_response_code(401);
         echo json_encode(['erro' => 'Token inválido ou expirado.']);
-        exit;
+        exit();
     }
 
-    return $dados;
+    return $dados; // retorna o payload: idUsuario, email, etc.
 }
 
-function autenticarAdmin()
+function obterCabecalhoAuthorization()
 {
-    $dados = autenticar();
-    if (($dados['idtipoUsuario'] ?? 0) != 3) {
-        http_response_code(403);
-        echo json_encode(['erro' => 'Acesso negado. Apenas administradores.']);
-        exit;
+    $headers = function_exists('getallheaders') ? getallheaders() : [];
+
+    foreach ($headers as $nome => $valor) {
+        if (strtolower($nome) === 'authorization') {
+            return $valor;
+        }
     }
-    return $dados;
+
+    $possiveisChaves = [
+        'HTTP_AUTHORIZATION',
+        'REDIRECT_HTTP_AUTHORIZATION',
+        'Authorization',
+        'authorization',
+    ];
+
+    foreach ($possiveisChaves as $chave) {
+        if (!empty($_SERVER[$chave])) {
+            return $_SERVER[$chave];
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Verifica autenticação e autorização baseada em roles
+ * @param array $rolesPermitidas Roles que podem acessar
+ * @return array Dados do usuário autenticado
+ */
+function autenticarEAutorizar($rolesPermitidas = [])
+{
+    require_once __DIR__ . '/../config/database.php';
+    
+    $usuarioAutenticado = autenticar();
+    
+    // Se não há restrição de role, apenas autentica
+    if (empty($rolesPermitidas)) {
+        return $usuarioAutenticado;
+    }
+    
+    // Buscar role/tipo do usuário no banco
+    $db = (new DB())->getConnection();
+    $query = "
+        SELECT tu.descricao as role
+        FROM Usuario u
+        LEFT JOIN tipoUsuario tu ON u.idtipoUsuario = tu.idtipoUsuario
+        WHERE u.idUsuario = ?
+        LIMIT 1
+    ";
+    
+    $stmt = $db->prepare($query);
+    $stmt->execute([$usuarioAutenticado['idUsuario']]);
+    $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$usuario || !in_array($usuario['role'], $rolesPermitidas)) {
+        http_response_code(403);
+        echo json_encode([
+            'erro' => 'Acesso negado. Permissão insuficiente.',
+            'rolesRequeridas' => $rolesPermitidas,
+            'roleAtual' => $usuario['role'] ?? 'desconhecido'
+        ]);
+        exit();
+    }
+    
+    return $usuarioAutenticado;
 }
