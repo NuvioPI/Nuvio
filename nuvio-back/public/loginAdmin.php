@@ -1,82 +1,94 @@
 <?php
 
 require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../config/env.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/jwt.php';
 
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
+$origemPermitida = env('CORS_ORIGIN', 'http://localhost:3000');
+$origemRequisicao = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json");
+if ($origemRequisicao === $origemPermitida) {
+    header('Access-Control-Allow-Origin: ' . $origemRequisicao);
+} else {
+    header('Access-Control-Allow-Origin: *');
+}
 
-$body = json_decode(file_get_contents('php://input'), true);
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Content-Type: application/json; charset=UTF-8');
 
-$email = $body['email'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['sucesso' => false, 'erro' => 'Método não permitido.']);
+    exit;
+}
+
+$body = json_decode(file_get_contents('php://input'), true) ?? [];
+$email = trim($body['email'] ?? '');
 $senha = $body['senha'] ?? '';
 
-echo json_encode([
-    "email_recebido" => $email,
-    "senha_recebida" => $senha
-]);
-exit;
+if ($email === '' || $senha === '') {
+    http_response_code(400);
+    echo json_encode(['sucesso' => false, 'erro' => 'Email e senha são obrigatórios.']);
+    exit;
+}
 
 try {
+    $db = (new DB())->getConnection();
 
-    $pdo = new PDO(
-        "mysql:host={$_ENV['DB_HOST']};port={$_ENV['DB_PORT']};dbname={$_ENV['DB_NAME']};charset=utf8mb4",
-        $_ENV['DB_USER'],
-        $_ENV['DB_PASS'],
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::MYSQL_ATTR_SSL_CA => __DIR__ . '/../certs/ca.pem'
-        ]
-    );
-
-    $stmt = $pdo->prepare("
-        SELECT *
-        FROM Usuario
-        WHERE email = ?
+    $stmt = $db->prepare("
+        SELECT u.idUsuario, u.nome, u.email, u.senhaHash, u.idtipoUsuario, tu.descricao AS tipo
+        FROM Usuario u
+        INNER JOIN tipoUsuario tu ON u.idtipoUsuario = tu.idtipoUsuario
+        WHERE u.email = ?
         LIMIT 1
     ");
-
     $stmt->execute([$email]);
-
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
+        http_response_code(401);
+        echo json_encode(['sucesso' => false, 'erro' => 'Credenciais inválidas.']);
+        exit;
+    }
 
-        echo json_encode([
-            "sucesso" => false,
-            "erro" => "Usuário não encontrado"
-        ]);
-
+    if ($user['tipo'] !== 'Administrador') {
+        http_response_code(403);
+        echo json_encode(['sucesso' => false, 'erro' => 'Acesso restrito a administradores.']);
         exit;
     }
 
     if (!password_verify($senha, $user['senhaHash'])) {
-
-        echo json_encode([
-            "sucesso" => false,
-            "erro" => "Senha incorreta"
-        ]);
-
+        http_response_code(401);
+        echo json_encode(['sucesso' => false, 'erro' => 'Credenciais inválidas.']);
         exit;
     }
 
-    echo json_encode([
-        "sucesso" => true,
-        "token" => "teste123",
-        "usuario" => [
-            "id" => $user["idUsuario"],
-            "nome" => $user["nome"],
-            "email" => $user["email"],
-            "tipo" => $user["idtipoUsuario"]
-        ]
+    $token = JWT::gerar([
+        'idUsuario' => $user['idUsuario'],
+        'email'     => $user['email'],
+        'nome'      => $user['nome'],
+        'tipo'      => $user['tipo'],
     ]);
 
+    http_response_code(200);
+    echo json_encode([
+        'sucesso' => true,
+        'token'   => $token,
+        'usuario' => [
+            'id'    => (int) $user['idUsuario'],
+            'nome'  => $user['nome'],
+            'email' => $user['email'],
+            'tipo'  => (int) $user['idtipoUsuario'],
+        ],
+    ]);
 } catch (Exception $e) {
-
-    echo json_encode([
-        "sucesso" => false,
-        "erro" => $e->getMessage()
-    ]);
+    http_response_code(500);
+    echo json_encode(['sucesso' => false, 'erro' => 'Erro interno do servidor.']);
 }

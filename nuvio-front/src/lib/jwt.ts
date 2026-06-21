@@ -2,7 +2,10 @@ import { SignJWT, jwtVerify } from "jose";
 
 // Em produção, use uma variável de ambiente: process.env.JWT_SECRET_KEY
 // Nunca deixe a chave hardcoded em produção!
-const SECRET_KEY = process.env.JWT_SECRET_KEY || "nuvio_secret_key_2025_troque_isso";
+const SECRET_KEY =
+  process.env.JWT_SECRET_KEY ||
+  process.env.JWT_SECRET ||
+  "nuvio_secret_key_2025_troque_isso";
 const key = new TextEncoder().encode(SECRET_KEY);
 
 export async function signJWT(payload: any, expiresIn = "8h") {

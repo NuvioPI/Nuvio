@@ -38,7 +38,7 @@ const actions = [
   {
     label: "Cadastrar cliente",
     desc: "Registra novo contato no Freshdesk com dados completos e tags.",
-    href: "/admin/clientes/novo",
+    href: "/admin/dashboard/RegisterUsers",
     icon: "user-plus",
     bg: "#eaf3de",
     ic: "#3b6d11",

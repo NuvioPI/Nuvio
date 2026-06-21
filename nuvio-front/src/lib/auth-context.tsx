@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await res.json();
 
-      if (!data.sucesso) {
+      if (!res.ok || !data.sucesso) {
         return { sucesso: false, erro: data.erro || 'Erro ao fazer login' };
       }
 
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('usuario');
     setToken(null);
     setUsuario(null);
-    router.push('/login');
+    router.push('/admin/login');
   }
 
   return (
