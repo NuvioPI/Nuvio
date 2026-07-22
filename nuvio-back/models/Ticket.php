@@ -100,7 +100,11 @@ class Ticket
         ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':idTicket', $this->idTicket, PDO::PARAM_INT);
+        $stmt->bindValue(
+            ':idTicket',
+            (int) $this->idTicket,
+            PDO::PARAM_INT
+        );
         $stmt->execute();
 
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -145,7 +149,11 @@ class Ticket
         ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':idUsuario', $this->idUsuario, PDO::PARAM_INT);
+        $stmt->bindValue(
+            ':idUsuario',
+            (int) $this->idUsuario,
+            PDO::PARAM_INT
+        );
         $stmt->execute();
 
         return $stmt;
@@ -180,7 +188,11 @@ class Ticket
         ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':idTecnico', $this->idTecnico, PDO::PARAM_INT);
+        $stmt->bindValue(
+            ':idTecnico',
+            (int) $this->idTecnico,
+            PDO::PARAM_INT
+        );
         $stmt->execute();
 
         return $stmt;
@@ -199,7 +211,8 @@ class Ticket
                 descricao,
                 statusTicket,
                 prioridade,
-                dataAbertura
+                dataAbertura,
+                dataFechamento
             )
             VALUES
             (
@@ -211,7 +224,8 @@ class Ticket
                 :descricao,
                 :statusTicket,
                 :prioridade,
-                NOW()
+                NOW(),
+                NULL
             )
         ";
 
@@ -222,14 +236,34 @@ class Ticket
 
         $stmt = $this->conn->prepare($query);
 
-        $stmt->bindValue(':idTecnico', $this->idTecnico, PDO::PARAM_INT);
-        $stmt->bindValue(':idUsuario', $this->idUsuario, PDO::PARAM_INT);
-        $stmt->bindValue(':idCategoria', $this->idCategoria, PDO::PARAM_INT);
-        $stmt->bindValue(':idSLA', $this->idSLA, PDO::PARAM_INT);
-        $stmt->bindValue(':titulo', $this->titulo);
-        $stmt->bindValue(':descricao', $this->descricao);
-        $stmt->bindValue(':statusTicket', $this->statusTicket);
-        $stmt->bindValue(':prioridade', $this->prioridade);
+        $stmt->bindValue(
+            ':idTecnico',
+            (int) $this->idTecnico,
+            PDO::PARAM_INT
+        );
+
+        $stmt->bindValue(
+            ':idUsuario',
+            (int) $this->idUsuario,
+            PDO::PARAM_INT
+        );
+
+        $stmt->bindValue(
+            ':idCategoria',
+            (int) $this->idCategoria,
+            PDO::PARAM_INT
+        );
+
+        $stmt->bindValue(
+            ':idSLA',
+            (int) $this->idSLA,
+            PDO::PARAM_INT
+        );
+
+        $stmt->bindValue(':titulo', $this->titulo, PDO::PARAM_STR);
+        $stmt->bindValue(':descricao', $this->descricao, PDO::PARAM_STR);
+        $stmt->bindValue(':statusTicket', $this->statusTicket, PDO::PARAM_STR);
+        $stmt->bindValue(':prioridade', $this->prioridade, PDO::PARAM_STR);
 
         if (!$stmt->execute()) {
             return false;
@@ -247,30 +281,47 @@ class Ticket
 
         if ($this->titulo !== null) {
             $this->titulo = $this->limparTexto($this->titulo);
+
             $campos[] = 'titulo = :titulo';
             $parametros[':titulo'] = $this->titulo;
         }
 
         if ($this->descricao !== null) {
             $this->descricao = $this->limparTexto($this->descricao);
+
             $campos[] = 'descricao = :descricao';
             $parametros[':descricao'] = $this->descricao;
         }
 
         if ($this->statusTicket !== null) {
-            $this->statusTicket = $this->limparTexto($this->statusTicket);
+            $this->statusTicket = $this->limparTexto(
+                $this->statusTicket
+            );
+
             $campos[] = 'statusTicket = :statusTicket';
             $parametros[':statusTicket'] = $this->statusTicket;
 
+            /*
+             * Ao fechar, registra a data somente se ainda não existir.
+             * Ao reabrir ou alterar para outro status, remove a data.
+             */
             if (strcasecmp($this->statusTicket, 'Fechado') === 0) {
-                $campos[] = 'dataFechamento = NOW()';
+                $campos[] = '
+                    dataFechamento = COALESCE(
+                        dataFechamento,
+                        NOW()
+                    )
+                ';
             } else {
                 $campos[] = 'dataFechamento = NULL';
             }
         }
 
         if ($this->prioridade !== null) {
-            $this->prioridade = $this->limparTexto($this->prioridade);
+            $this->prioridade = $this->limparTexto(
+                $this->prioridade
+            );
+
             $campos[] = 'prioridade = :prioridade';
             $parametros[':prioridade'] = $this->prioridade;
         }
@@ -309,36 +360,69 @@ class Ticket
 
         foreach ($parametros as $nome => $valor) {
             if (is_int($valor)) {
-                $stmt->bindValue($nome, $valor, PDO::PARAM_INT);
+                $stmt->bindValue(
+                    $nome,
+                    $valor,
+                    PDO::PARAM_INT
+                );
             } else {
-                $stmt->bindValue($nome, $valor);
+                $stmt->bindValue(
+                    $nome,
+                    $valor,
+                    PDO::PARAM_STR
+                );
             }
         }
 
-        $stmt->bindValue(':idTicket', $this->idTicket, PDO::PARAM_INT);
+        $stmt->bindValue(
+            ':idTicket',
+            (int) $this->idTicket,
+            PDO::PARAM_INT
+        );
 
         return $stmt->execute();
     }
 
     public function updateStatus()
     {
-        $this->statusTicket = $this->limparTexto($this->statusTicket);
+        $this->statusTicket = $this->limparTexto(
+            $this->statusTicket
+        );
 
-        $dataFechamento = strcasecmp($this->statusTicket, 'Fechado') === 0
-            ? 'NOW()'
-            : 'NULL';
-
-        $query = "
-            UPDATE {$this->tabela}
-            SET
-                statusTicket = :statusTicket,
-                dataFechamento = {$dataFechamento}
-            WHERE idTicket = :idTicket
-        ";
+        if (strcasecmp($this->statusTicket, 'Fechado') === 0) {
+            $query = "
+                UPDATE {$this->tabela}
+                SET
+                    statusTicket = :statusTicket,
+                    dataFechamento = COALESCE(
+                        dataFechamento,
+                        NOW()
+                    )
+                WHERE idTicket = :idTicket
+            ";
+        } else {
+            $query = "
+                UPDATE {$this->tabela}
+                SET
+                    statusTicket = :statusTicket,
+                    dataFechamento = NULL
+                WHERE idTicket = :idTicket
+            ";
+        }
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':statusTicket', $this->statusTicket);
-        $stmt->bindValue(':idTicket', $this->idTicket, PDO::PARAM_INT);
+
+        $stmt->bindValue(
+            ':statusTicket',
+            $this->statusTicket,
+            PDO::PARAM_STR
+        );
+
+        $stmt->bindValue(
+            ':idTicket',
+            (int) $this->idTicket,
+            PDO::PARAM_INT
+        );
 
         return $stmt->execute();
     }
@@ -349,12 +433,20 @@ class Ticket
             UPDATE {$this->tabela}
             SET
                 statusTicket = 'Fechado',
-                dataFechamento = NOW()
+                dataFechamento = COALESCE(
+                    dataFechamento,
+                    NOW()
+                )
             WHERE idTicket = :idTicket
         ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':idTicket', $this->idTicket, PDO::PARAM_INT);
+
+        $stmt->bindValue(
+            ':idTicket',
+            (int) $this->idTicket,
+            PDO::PARAM_INT
+        );
 
         return $stmt->execute();
     }
@@ -368,8 +460,18 @@ class Ticket
         ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':idTecnico', $this->idTecnico, PDO::PARAM_INT);
-        $stmt->bindValue(':idTicket', $this->idTicket, PDO::PARAM_INT);
+
+        $stmt->bindValue(
+            ':idTecnico',
+            (int) $this->idTecnico,
+            PDO::PARAM_INT
+        );
+
+        $stmt->bindValue(
+            ':idTicket',
+            (int) $this->idTicket,
+            PDO::PARAM_INT
+        );
 
         return $stmt->execute();
     }
@@ -382,8 +484,16 @@ class Ticket
         ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':idTicket', $this->idTicket, PDO::PARAM_INT);
-        $stmt->execute();
+
+        $stmt->bindValue(
+            ':idTicket',
+            (int) $this->idTicket,
+            PDO::PARAM_INT
+        );
+
+        if (!$stmt->execute()) {
+            return false;
+        }
 
         return $stmt->rowCount() > 0;
     }
