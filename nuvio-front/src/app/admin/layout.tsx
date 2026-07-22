@@ -1,16 +1,27 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Admin - Nuvio",
+  title: "Nuvio | Admin",
+  description: "Área restrita do Nuvio.",
   icons: {
-    icon: "/admin/icon.ico",
+    icon: "./icon.ico",
   },
 };
+
+import { DM_Sans } from "next/font/google";
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  variable: "--font-dm-sans",
+});
+
+import { AdminProviders } from "./providers";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <AdminProviders>{children}</AdminProviders>;
 }

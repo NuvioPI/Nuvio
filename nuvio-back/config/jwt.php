@@ -1,13 +1,21 @@
 <?php
+require_once __DIR__ . '/env.php';
 
 class JWT
 {
-    private static $secret = 'nuvio_secret_key_2025_troque_isso';
+    private static $secret;
     private static $algoritmo = 'HS256';
-    private static $expiracao = 28800; // 8 horas em segundos
+    private static $expiracao;
+    
+    public static function init()
+    {
+        self::$secret = env('JWT_SECRET', 'nuvio_secret_key_2025_troque_isso');
+        self::$expiracao = (int)env('JWT_EXPIRACAO', 28800);
+    }
 
     public static function gerar($payload)
     {
+        self::init();
         $header = self::base64url(json_encode([
             'typ' => 'JWT',
             'alg' => self::$algoritmo
@@ -30,6 +38,7 @@ class JWT
 
     public static function validar($token)
     {
+        self::init();
         $partes = explode('.', $token);
 
         if (count($partes) !== 3) {

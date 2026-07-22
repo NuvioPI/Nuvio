@@ -1,181 +1,329 @@
 <?php
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Ticket.php';
-require_once __DIR__ . '/../models/RespostaTicket.php';
 
-class TicketController
+class TicketController extends BaseController
 {
-    private $db;
     private $ticket;
-    private $respostaTicket;
-    private $usuarioAutenticado;
 
     public function __construct()
     {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $database = new DB();
-        $this->db = $database->getConnection();
+        parent::__construct();
         $this->ticket = new Ticket($this->db);
-        $this->respostaTicket = new RespostaTicket($this->db);
-
-        global $usuarioAutenticado;
-        $this->usuarioAutenticado = $usuarioAutenticado ?? null;
-    }
-
-    private function readBody(): array
-    {
-        $body = json_decode(file_get_contents('php://input'), true);
-        return is_array($body) ? $body : [];
     }
 
     public function index()
     {
-        $stmt = $this->ticket->getAll();
-        $tickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        http_response_code(200);
-        echo json_encode(['tickets' => $tickets], JSON_UNESCAPED_UNICODE);
+        $this->respond([
+            'tickets' => $this->rows($this->ticket->getAll())
+        ]);
     }
 
     public function show($id)
     {
-        $this->ticket->idTicket = (int)$id;
-
-        if (!$this->ticket->getById()) {
-            http_response_code(404);
-            echo json_encode(['erro' => 'Ticket não encontrado.']);
+        if (!$this->idValido($id)) {
+            $this->respond(['erro' => 'ID do ticket inválido.'], 400);
             return;
         }
 
-        $this->respostaTicket->idTicket = $this->ticket->idTicket;
-        $historicoStmt = $this->respostaTicket->getByTicket();
-        $historico = $historicoStmt->fetchAll(PDO::FETCH_ASSOC);
+        $this->ticket->idTicket = (int) $id;
 
-        $ticketData = [
-            'idTicket' => $this->ticket->idTicket,
-            'titulo' => $this->ticket->titulo,
-            'statusTicket' => $this->ticket->statusTicket,
-            'prioridade' => $this->ticket->prioridade,
-            'dataAbertura' => $this->ticket->dataAbertura,
-            'dataFechamento' => $this->ticket->dataFechamento,
-            'idUsuario' => $this->ticket->idUsuario,
-            'idTecnico' => $this->ticket->idTecnico,
-            'idCategoria' => $this->ticket->idCategoria,
-            'idSLA' => $this->ticket->idSLA,
-            'nomeUsuario' => isset($this->ticket->nomeUsuario) ? $this->ticket->nomeUsuario : null,
-            'nomeTecnico' => isset($this->ticket->nomeTecnico) ? $this->ticket->nomeTecnico : null,
-            'nomeCategoria' => isset($this->ticket->nomeCategoria) ? $this->ticket->nomeCategoria : null,
-            'nomeSLA' => isset($this->ticket->nomeSLA) ? $this->ticket->nomeSLA : null,
-            'tempoResposta' => isset($this->ticket->tempoResposta) ? $this->ticket->tempoResposta : null,
-            'tempoResolucao' => isset($this->ticket->tempoResolucao) ? $this->ticket->tempoResolucao : null,
-            'historico' => $historico,
-        ];
+        if (!$this->ticket->getById()) {
+            $this->respond(['erro' => 'Ticket não encontrado.'], 404);
+            return;
+        }
 
-        http_response_code(200);
-        echo json_encode(['ticket' => $ticketData], JSON_UNESCAPED_UNICODE);
+        $this->respond([
+            'ticket' => [
+                'idTicket' => (int) $this->ticket->idTicket,
+                'idTecnico' => (int) $this->ticket->idTecnico,
+                'idUsuario' => (int) $this->ticket->idUsuario,
+                'idCategoria' => (int) $this->ticket->idCategoria,
+                'idSLA' => (int) $this->ticket->idSLA,
+                'titulo' => $this->ticket->titulo,
+                'descricao' => $this->ticket->descricao,
+                'statusTicket' => $this->ticket->statusTicket,
+                'prioridade' => $this->ticket->prioridade,
+                'dataAbertura' => $this->ticket->dataAbertura,
+                'dataFechamento' => $this->ticket->dataFechamento
+            ]
+        ]);
     }
 
     public function store()
     {
-        $body = $this->readBody();
+        $body = $this->body();
 
-        if (empty($body['idCategoria']) || empty($body['idSLA']) || empty($body['titulo']) || empty($body['prioridade']) || empty($body['idTecnico'])) {
-            http_response_code(400);
-            echo json_encode(['erro' => 'idCategoria, idSLA, titulo, prioridade e idTecnico são obrigatórios.']);
+        $camposObrigatorios = [
+            'idTecnico',
+            'idUsuario',
+            'idCategoria',
+            'idSLA',
+            'titulo',
+            'descricao',
+            'prioridade'
+        ];
+
+        if ($this->missing($body, $camposObrigatorios)) {
+            $this->respond([
+                'erro' => 'Técnico, usuário, categoria, SLA, título, descrição e prioridade são obrigatórios.'
+            ], 400);
+
             return;
         }
 
-        if (empty($this->usuarioAutenticado['idUsuario'])) {
-            http_response_code(401);
-            echo json_encode(['erro' => 'Usuário não autenticado.']);
+        if (!$this->idsDoCorpoValidos($body, [
+            'idTecnico',
+            'idUsuario',
+            'idCategoria',
+            'idSLA'
+        ])) {
+            $this->respond([
+                'erro' => 'Os identificadores informados devem ser números inteiros maiores que zero.'
+            ], 400);
+
             return;
         }
 
-        $this->ticket->idUsuario = (int)$this->usuarioAutenticado['idUsuario'];
-        $this->ticket->idCategoria = (int)$body['idCategoria'];
-        $this->ticket->idSLA = (int)$body['idSLA'];
-        $this->ticket->idTecnico = (int)$body['idTecnico'];
+        if (
+            trim((string) $body['titulo']) === '' ||
+            trim((string) $body['descricao']) === '' ||
+            trim((string) $body['prioridade']) === ''
+        ) {
+            $this->respond([
+                'erro' => 'Título, descrição e prioridade não podem ficar vazios.'
+            ], 400);
+
+            return;
+        }
+
+        $this->ticket->idTecnico = (int) $body['idTecnico'];
+        $this->ticket->idUsuario = (int) $body['idUsuario'];
+        $this->ticket->idCategoria = (int) $body['idCategoria'];
+        $this->ticket->idSLA = (int) $body['idSLA'];
         $this->ticket->titulo = $body['titulo'];
+        $this->ticket->descricao = $body['descricao'];
         $this->ticket->prioridade = $body['prioridade'];
 
-        if ($this->ticket->create()) {
-            http_response_code(201);
-            echo json_encode(['mensagem' => 'Ticket criado com sucesso.', 'ticket' => ['idTicket' => $this->ticket->idTicket, 'titulo' => $this->ticket->titulo, 'statusTicket' => $this->ticket->statusTicket, 'prioridade' => $this->ticket->prioridade, 'idUsuario' => $this->ticket->idUsuario, 'idTecnico' => $this->ticket->idTecnico, 'idCategoria' => $this->ticket->idCategoria, 'idSLA' => $this->ticket->idSLA]], JSON_UNESCAPED_UNICODE);
-            return;
-        }
+        try {
+            if ($this->ticket->create()) {
+                $this->respond([
+                    'mensagem' => 'Ticket criado com sucesso.',
+                    'idTicket' => (int) $this->ticket->idTicket
+                ], 201);
 
-        http_response_code(500);
-        echo json_encode(['erro' => 'Erro ao criar ticket.']);
+                return;
+            }
+
+            $this->respond([
+                'erro' => 'Não foi possível criar o ticket.'
+            ], 500);
+        } catch (PDOException $erro) {
+            $this->respond([
+                'erro' => 'Não foi possível criar o ticket. Verifique os dados relacionados.'
+            ], 409);
+        }
     }
 
     public function update($id)
     {
-        $this->ticket->idTicket = (int)$id;
-
-        if (!$this->ticket->getById()) {
-            http_response_code(404);
-            echo json_encode(['erro' => 'Ticket não encontrado.']);
+        if (!$this->idValido($id)) {
+            $this->respond(['erro' => 'ID do ticket inválido.'], 400);
             return;
         }
 
-        $body = $this->readBody();
+        $body = $this->body();
 
         if (empty($body)) {
-            http_response_code(400);
-            echo json_encode(['erro' => 'Corpo da requisição vazio.']);
+            $this->respond([
+                'erro' => 'Nenhum dado foi enviado para atualização.'
+            ], 400);
+
             return;
         }
 
-        if (isset($body['titulo'])) {
+        $camposPermitidos = [
+            'titulo',
+            'descricao',
+            'statusTicket',
+            'prioridade',
+            'idTecnico',
+            'idUsuario',
+            'idCategoria',
+            'idSLA'
+        ];
+
+        $camposRecebidos = array_intersect(
+            array_keys($body),
+            $camposPermitidos
+        );
+
+        if (empty($camposRecebidos)) {
+            $this->respond([
+                'erro' => 'Nenhum campo válido foi enviado para atualização.'
+            ], 400);
+
+            return;
+        }
+
+        $camposTexto = [
+            'titulo',
+            'descricao',
+            'statusTicket',
+            'prioridade'
+        ];
+
+        foreach ($camposTexto as $campo) {
+            if (
+                array_key_exists($campo, $body) &&
+                trim((string) $body[$campo]) === ''
+            ) {
+                $this->respond([
+                    'erro' => "O campo {$campo} não pode ficar vazio."
+                ], 400);
+
+                return;
+            }
+        }
+
+        $camposId = [
+            'idTecnico',
+            'idUsuario',
+            'idCategoria',
+            'idSLA'
+        ];
+
+        foreach ($camposId as $campo) {
+            if (
+                array_key_exists($campo, $body) &&
+                !$this->idValido($body[$campo])
+            ) {
+                $this->respond([
+                    'erro' => "O campo {$campo} deve ser um número inteiro maior que zero."
+                ], 400);
+
+                return;
+            }
+        }
+
+        $ticketExistente = new Ticket($this->db);
+        $ticketExistente->idTicket = (int) $id;
+
+        if (!$ticketExistente->getById()) {
+            $this->respond(['erro' => 'Ticket não encontrado.'], 404);
+            return;
+        }
+
+        $this->ticket->idTicket = (int) $id;
+
+        if (array_key_exists('titulo', $body)) {
             $this->ticket->titulo = $body['titulo'];
         }
-        if (isset($body['statusTicket'])) {
+
+        if (array_key_exists('descricao', $body)) {
+            $this->ticket->descricao = $body['descricao'];
+        }
+
+        if (array_key_exists('statusTicket', $body)) {
             $this->ticket->statusTicket = $body['statusTicket'];
         }
-        if (isset($body['prioridade'])) {
+
+        if (array_key_exists('prioridade', $body)) {
             $this->ticket->prioridade = $body['prioridade'];
         }
-        if (isset($body['idTecnico'])) {
-            $this->ticket->idTecnico = (int)$body['idTecnico'];
-        }
-        if (isset($body['idCategoria'])) {
-            $this->ticket->idCategoria = (int)$body['idCategoria'];
-        }
-        if (isset($body['idSLA'])) {
-            $this->ticket->idSLA = (int)$body['idSLA'];
+
+        if (array_key_exists('idTecnico', $body)) {
+            $this->ticket->idTecnico = (int) $body['idTecnico'];
         }
 
-        if (!$this->ticket->update()) {
-            http_response_code(400);
-            echo json_encode(['erro' => 'Falha ao atualizar ticket.']);
-            return;
+        if (array_key_exists('idUsuario', $body)) {
+            $this->ticket->idUsuario = (int) $body['idUsuario'];
         }
 
-        $this->ticket->getById();
+        if (array_key_exists('idCategoria', $body)) {
+            $this->ticket->idCategoria = (int) $body['idCategoria'];
+        }
 
-        http_response_code(200);
-        echo json_encode(['mensagem' => 'Ticket atualizado com sucesso.', 'ticket' => ['idTicket' => $this->ticket->idTicket, 'titulo' => $this->ticket->titulo, 'statusTicket' => $this->ticket->statusTicket, 'prioridade' => $this->ticket->prioridade, 'dataAbertura' => $this->ticket->dataAbertura, 'dataFechamento' => $this->ticket->dataFechamento, 'idUsuario' => $this->ticket->idUsuario, 'idTecnico' => $this->ticket->idTecnico, 'idCategoria' => $this->ticket->idCategoria, 'idSLA' => $this->ticket->idSLA]], JSON_UNESCAPED_UNICODE);
+        if (array_key_exists('idSLA', $body)) {
+            $this->ticket->idSLA = (int) $body['idSLA'];
+        }
+
+        try {
+            if ($this->ticket->update()) {
+                $this->respond([
+                    'mensagem' => 'Ticket atualizado com sucesso.'
+                ]);
+
+                return;
+            }
+
+            $this->respond([
+                'erro' => 'Não foi possível atualizar o ticket.'
+            ], 500);
+        } catch (PDOException $erro) {
+            $this->respond([
+                'erro' => 'Não foi possível atualizar o ticket. Verifique os dados relacionados.'
+            ], 409);
+        }
     }
 
     public function destroy($id)
     {
-        $this->ticket->idTicket = (int)$id;
-
-        if (!$this->ticket->getById()) {
-            http_response_code(404);
-            echo json_encode(['erro' => 'Ticket não encontrado.']);
+        if (!$this->idValido($id)) {
+            $this->respond(['erro' => 'ID do ticket inválido.'], 400);
             return;
         }
 
-        if (!$this->ticket->delete()) {
-            http_response_code(500);
-            echo json_encode(['erro' => 'Falha ao excluir ticket.']);
+        $ticketExistente = new Ticket($this->db);
+        $ticketExistente->idTicket = (int) $id;
+
+        if (!$ticketExistente->getById()) {
+            $this->respond(['erro' => 'Ticket não encontrado.'], 404);
             return;
         }
 
-        http_response_code(200);
-        echo json_encode(['mensagem' => 'Ticket excluído com sucesso.']);
+        $this->ticket->idTicket = (int) $id;
+
+        try {
+            if ($this->ticket->delete()) {
+                $this->respond([
+                    'mensagem' => 'Ticket removido com sucesso.'
+                ]);
+
+                return;
+            }
+
+            $this->respond([
+                'erro' => 'Não foi possível remover o ticket.'
+            ], 500);
+        } catch (PDOException $erro) {
+            $this->respond([
+                'erro' => 'O ticket possui registros vinculados e não pode ser removido.'
+            ], 409);
+        }
+    }
+
+    private function idValido($id)
+    {
+        return filter_var(
+            $id,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]]
+        ) !== false;
+    }
+
+    private function idsDoCorpoValidos(array $body, array $campos)
+    {
+        foreach ($campos as $campo) {
+            if (
+                !array_key_exists($campo, $body) ||
+                !$this->idValido($body[$campo])
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

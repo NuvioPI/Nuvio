@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/jwt.php';
-require_once __DIR__ . '/../models/Usuario.php';
+require_once __DIR__ . '/../models/usuario.php';
 
 class AuthController
 {
@@ -107,7 +107,7 @@ class AuthController
 
     private function buscarPorEmail($email)
     {
-        $query = "SELECT idUsuario, nome, email, senhaHash FROM usuario WHERE email = ? LIMIT 1";
+        $query = "SELECT idUsuario, nome, email, senhaHash FROM Usuario WHERE email = ? LIMIT 1";
         $stmt = $this->db->prepare($query);
         $stmt->execute([$email]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -115,7 +115,7 @@ class AuthController
 
     private function emailExiste($email)
     {
-        $query = "SELECT COUNT(*) FROM usuario WHERE email = ?";
+        $query = "SELECT COUNT(*) FROM Usuario WHERE email = ?";
         $stmt = $this->db->prepare($query);
         $stmt->execute([$email]);
         return $stmt->fetchColumn() > 0;
