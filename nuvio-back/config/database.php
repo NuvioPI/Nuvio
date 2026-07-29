@@ -14,10 +14,10 @@ class DB
     public function __construct()
     {
         $this->host     = env('DB_HOST');
-        $this->dbname   = env('DB_NAME', 'postgres');
-        $this->username = env('DB_USER', 'postgres');
+        $this->dbname   = env('DB_NAME', 'defaultdb');
+        $this->username = env('DB_USER', 'avnadmin');
         $this->password = env('DB_PASS', '');
-        $this->port     = env('DB_PORT', '5432');
+        $this->port     = env('DB_PORT', '27687');
     }
 
     public function getConnection()
@@ -32,7 +32,7 @@ class DB
 
         try {
             $dsn = sprintf(
-                'pgsql:host=%s;port=%s;dbname=%s;sslmode=require;options=--search_path=public',
+                'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
                 $this->host,
                 $this->port,
                 $this->dbname
@@ -43,14 +43,9 @@ class DB
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ]);
+
         } catch (PDOException $e) {
-            $mensagem = $e->getMessage();
-
-            if (str_contains($mensagem, 'could not translate host name')) {
-                $mensagem = 'Host do banco inválido ou inacessível. Verifique DB_HOST no .env do backend.';
-            }
-
-            $this->responderErro($mensagem);
+            $this->responderErro($e->getMessage());
         }
 
         return $this->conn;
@@ -59,10 +54,12 @@ class DB
     private function responderErro(string $mensagem): void
     {
         http_response_code(500);
+
         echo json_encode([
             'sucesso' => false,
             'erro'    => 'Erro de conexão: ' . $mensagem,
         ]);
+
         exit;
     }
 }
