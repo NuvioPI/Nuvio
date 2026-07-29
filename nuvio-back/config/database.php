@@ -31,6 +31,7 @@ class DB
         }
 
         try {
+
             $dsn = sprintf(
                 'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
                 $this->host,
@@ -38,11 +39,19 @@ class DB
                 $this->dbname
             );
 
-            $this->conn = new PDO($dsn, $this->username, $this->password, [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-            ]);
+            $this->conn = new PDO(
+                $dsn,
+                $this->username,
+                $this->password,
+                [
+                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES   => false,
+
+                    // SSL Aiven
+                    PDO::MYSQL_ATTR_SSL_CA => __DIR__ . '/../certs/ca.pem',
+                ]
+            );
 
         } catch (PDOException $e) {
             $this->responderErro($e->getMessage());
@@ -57,7 +66,7 @@ class DB
 
         echo json_encode([
             'sucesso' => false,
-            'erro'    => 'Erro de conexão: ' . $mensagem,
+            'erro' => 'Erro de conexão: ' . $mensagem,
         ]);
 
         exit;
