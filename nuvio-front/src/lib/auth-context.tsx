@@ -54,6 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function login(email: string, senha: string) {
+    if (!API_URL) {
+      return {
+        sucesso: false,
+        erro: 'URL da API não configurada. Defina NEXT_PUBLIC_API_URL no .env.local',
+      };
+    }
+
     try {
       const res = await fetch(`${API_URL}/loginAdmin.php`, {
         method: 'POST',
@@ -61,20 +68,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, senha }),
       });
 
-      const data = await res.json();
+      let data: { sucesso?: boolean; erro?: string; token?: string; usuario?: Usuario } = {};
+      try {
+        data = await res.json();
+      } catch {
+        return {
+          sucesso: false,
+          erro: `Resposta inválida do servidor (${res.status}). Verifique se o backend PHP está rodando.`,
+        };
+      }
 
       if (!res.ok || !data.sucesso) {
         return { sucesso: false, erro: data.erro || 'Erro ao fazer login' };
       }
 
-      setCookie('token', data.token, 8); // 8h, igual expiração do JWT no back
+      setCookie('token', data.token!, 8);
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
-      setToken(data.token);
-      setUsuario(data.usuario);
+      setToken(data.token!);
+      setUsuario(data.usuario!);
 
       return { sucesso: true };
-    } catch (err) {
-      return { sucesso: false, erro: 'Não foi possível conectar ao servidor' };
+    } catch {
+      return {
+        sucesso: false,
+        erro: `Não foi possível conectar ao servidor em ${API_URL}. Inicie o backend com: php -S localhost:8000 -t public`,
+      };
     }
   }
 
