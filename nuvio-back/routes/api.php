@@ -82,26 +82,36 @@ $usuarioAutenticado = autenticar();
 // Extrair ID da URI para rotas com parâmetro (ex: /tickets/5)
 $uriParts = explode('/', ltrim($uri, '/'));
 $recurso  = $uriParts[0] ?? '';
-$id       = isset($uriParts[1]) && is_numeric($uriParts[1]) ? (int)$uriParts[1] : null;
+$segmentoId = $uriParts[1] ?? null;
+$id       = $segmentoId !== null && is_numeric($segmentoId) ? (int)$segmentoId : null;
+$subrecurso = $uriParts[2] ?? null;
 
 // --- Tickets ---
 if ($recurso === 'tickets') {
-    $controller = new TicketController();
+    $controller = new TicketController(
+        (int) $usuarioAutenticado['idUsuario']
+    );
     
-    if ($method === 'GET' && !$id) {
+    if ($method === 'GET' && $segmentoId === null) {
         $controller->index();
-    } elseif ($method === 'GET' && $id) {
+    } elseif (
+        $method === 'GET' &&
+        $id &&
+        $subrecurso === 'historico'
+    ) {
+        $controller->historico($id);
+    } elseif ($method === 'GET' && $id && !$subrecurso) {
         $controller->show($id);
-    } elseif ($method === 'POST') {
+    } elseif ($method === 'POST' && $segmentoId === null) {
         $controller->store();
-    } elseif ($method === 'PUT') {
+    } elseif ($method === 'PUT' && !$subrecurso) {
         if (!$id) {
             http_response_code(400);
             echo json_encode(['erro' => 'ID do ticket é obrigatório para atualizar.']);
         } else {
             $controller->update($id);
         }
-    } elseif ($method === 'DELETE') {
+    } elseif ($method === 'DELETE' && !$subrecurso) {
         if (!$id) {
             http_response_code(400);
             echo json_encode(['erro' => 'ID do ticket é obrigatório para deletar.']);

@@ -2,10 +2,13 @@
 
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Ticket.php';
+require_once __DIR__ . '/../models/HistoricoTicket.php';
 
 class TicketController extends BaseController
 {
     private $ticket;
+    private $historico;
+    private $idUsuarioAutenticado;
 
     private const PRIORIDADES_VALIDAS = [
         'Baixa',
@@ -15,16 +18,17 @@ class TicketController extends BaseController
 
     private const STATUS_VALIDOS = [
         'Aberto',
-        'Em andamento',
-        'Pendente',
+        'Em atendimento',
         'Resolvido',
         'Fechado'
     ];
 
-    public function __construct()
+    public function __construct($idUsuarioAutenticado)
     {
         parent::__construct();
         $this->ticket = new Ticket($this->db);
+        $this->historico = new HistoricoTicket($this->db);
+        $this->idUsuarioAutenticado = (int) $idUsuarioAutenticado;
     }
 
     /**
@@ -87,6 +91,43 @@ class TicketController extends BaseController
         } catch (PDOException $erro) {
             $this->respond([
                 'erro' => 'Não foi possível consultar o ticket.'
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /tickets/{id}/historico
+     */
+    public function historico($id)
+    {
+        if (!$this->idValido($id)) {
+            $this->respond([
+                'erro' => 'ID do ticket inválido.'
+            ], 400);
+
+            return;
+        }
+
+        $ticketExistente = new Ticket($this->db);
+        $ticketExistente->idTicket = (int) $id;
+
+        try {
+            if (!$ticketExistente->getById()) {
+                $this->respond([
+                    'erro' => 'Ticket não encontrado.'
+                ], 404);
+
+                return;
+            }
+
+            $this->respond([
+                'historico' => $this->rows(
+                    $this->historico->getByTicket($id)
+                )
+            ]);
+        } catch (PDOException $erro) {
+            $this->respond([
+                'erro' => 'Não foi possível consultar o histórico do ticket.'
             ], 500);
         }
     }
@@ -164,22 +205,41 @@ class TicketController extends BaseController
         $this->ticket->prioridade = $body['prioridade'];
 
         try {
-            if (!$this->ticket->create()) {
-                $this->respond([
-                    'erro' => 'Não foi possível criar o ticket.'
-                ], 500);
+            $this->db->beginTransaction();
 
-                return;
+            if (!$this->ticket->create()) {
+                throw new RuntimeException('Falha ao criar o ticket.');
             }
+
+            if (!$this->historico->registrar(
+                $this->ticket->idTicket,
+                $this->idUsuarioAutenticado,
+                'Criacao',
+                'statusTicket',
+                null,
+                'Aberto'
+            )) {
+                throw new RuntimeException('Falha ao registrar o histórico.');
+            }
+
+            $this->db->commit();
 
             $this->respond([
                 'mensagem' => 'Ticket criado com sucesso.',
                 'idTicket' => (int) $this->ticket->idTicket
             ], 201);
         } catch (PDOException $erro) {
+            $this->desfazerTransacao();
+
             $this->respond([
                 'erro' => 'Não foi possível criar o ticket. Verifique técnico, usuário, categoria e SLA.'
             ], 409);
+        } catch (Throwable $erro) {
+            $this->desfazerTransacao();
+
+            $this->respond([
+                'erro' => 'Não foi possível criar o ticket.'
+            ], 500);
         }
     }
 
@@ -271,7 +331,7 @@ class TicketController extends BaseController
             !$this->statusValido($body['statusTicket'])
         ) {
             $this->respond([
-                'erro' => 'Status inválido. Use Aberto, Em andamento, Pendente, Resolvido ou Fechado.'
+                'erro' => 'Status inválido. Use Aberto, Em atendimento, Resolvido ou Fechado.'
             ], 400);
 
             return;
@@ -338,21 +398,57 @@ class TicketController extends BaseController
                 $this->ticket->idSLA = (int) $body['idSLA'];
             }
 
-            if (!$this->ticket->update()) {
+            $alteracoes = $this->montarAlteracoes(
+                $ticketExistente,
+                $body
+            );
+
+            if (empty($alteracoes)) {
                 $this->respond([
-                    'erro' => 'Não foi possível atualizar o ticket.'
-                ], 500);
+                    'mensagem' => 'Nenhuma alteração identificada.'
+                ]);
 
                 return;
             }
+
+            $this->db->beginTransaction();
+
+            if (!$this->ticket->update()) {
+                throw new RuntimeException('Falha ao atualizar o ticket.');
+            }
+
+            foreach ($alteracoes as $alteracao) {
+                if (!$this->historico->registrar(
+                    $id,
+                    $this->idUsuarioAutenticado,
+                    $this->acaoHistorico($alteracao['campo']),
+                    $alteracao['campo'],
+                    $alteracao['valorAnterior'],
+                    $alteracao['valorNovo']
+                )) {
+                    throw new RuntimeException(
+                        'Falha ao registrar o histórico.'
+                    );
+                }
+            }
+
+            $this->db->commit();
 
             $this->respond([
                 'mensagem' => 'Ticket atualizado com sucesso.'
             ]);
         } catch (PDOException $erro) {
+            $this->desfazerTransacao();
+
             $this->respond([
                 'erro' => 'Não foi possível atualizar o ticket. Verifique os dados relacionados.'
             ], 409);
+        } catch (Throwable $erro) {
+            $this->desfazerTransacao();
+
+            $this->respond([
+                'erro' => 'Não foi possível atualizar o ticket.'
+            ], 500);
         }
     }
 
@@ -398,6 +494,81 @@ class TicketController extends BaseController
             $this->respond([
                 'erro' => 'O ticket possui registros vinculados e não pode ser removido.'
             ], 409);
+        }
+    }
+
+    private function montarAlteracoes(
+        Ticket $ticketExistente,
+        array $body
+    ) {
+        $camposNumericos = [
+            'idTecnico',
+            'idCategoria',
+            'idSLA'
+        ];
+
+        $camposRastreados = [
+            'titulo',
+            'descricao',
+            'statusTicket',
+            'prioridade',
+            'idTecnico',
+            'idCategoria',
+            'idSLA'
+        ];
+
+        $alteracoes = [];
+
+        foreach ($camposRastreados as $campo) {
+            if (!array_key_exists($campo, $body)) {
+                continue;
+            }
+
+            $valorAnterior = $ticketExistente->$campo;
+            $valorNovo = in_array($campo, $camposNumericos, true)
+                ? (int) $body[$campo]
+                : $this->limparTextoHistorico($body[$campo]);
+
+            if ((string) $valorAnterior === (string) $valorNovo) {
+                continue;
+            }
+
+            $alteracoes[] = [
+                'campo' => $campo,
+                'valorAnterior' => $valorAnterior,
+                'valorNovo' => $valorNovo
+            ];
+        }
+
+        return $alteracoes;
+    }
+
+    private function acaoHistorico($campo)
+    {
+        if ($campo === 'statusTicket') {
+            return 'AlteracaoStatus';
+        }
+
+        if ($campo === 'prioridade') {
+            return 'AlteracaoPrioridade';
+        }
+
+        if ($campo === 'idTecnico') {
+            return 'Reatribuicao';
+        }
+
+        return 'Atualizacao';
+    }
+
+    private function limparTextoHistorico($valor)
+    {
+        return trim(strip_tags((string) $valor));
+    }
+
+    private function desfazerTransacao()
+    {
+        if ($this->db->inTransaction()) {
+            $this->db->rollBack();
         }
     }
 
