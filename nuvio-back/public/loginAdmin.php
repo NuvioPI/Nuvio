@@ -43,9 +43,9 @@ try {
     $db = (new DB())->getConnection();
 
     $stmt = $db->prepare("
-        SELECT u.idUsuario, u.nome, u.email, u.senhaHash, u.idtipoUsuario, tu.descricao AS tipo
-        FROM Usuario u
-        INNER JOIN tipoUsuario tu ON u.idtipoUsuario = tu.idtipoUsuario
+        SELECT u.idusuario, u.nome, u.email, u.senhahash, u.idtipousuario, tu.descricao AS tipo
+        FROM usuario u
+        INNER JOIN tipousuario tu ON u.idtipousuario = tu.idtipousuario
         WHERE u.email = ?
         LIMIT 1
     ");
@@ -64,14 +64,14 @@ try {
         exit;
     }
 
-    if (!password_verify($senha, $user['senhaHash'])) {
+    if (!password_verify($senha, $user['senhahash'])) {
         http_response_code(401);
         echo json_encode(['sucesso' => false, 'erro' => 'Credenciais inválidas.']);
         exit;
     }
 
     $token = JWT::gerar([
-        'idUsuario' => $user['idUsuario'],
+        'idUsuario' => $user['idusuario'],
         'email'     => $user['email'],
         'nome'      => $user['nome'],
         'tipo'      => $user['tipo'],
@@ -82,10 +82,10 @@ try {
         'sucesso' => true,
         'token'   => $token,
         'usuario' => [
-            'id'    => (int) $user['idUsuario'],
+            'id'    => (int) $user['idusuario'],
             'nome'  => $user['nome'],
             'email' => $user['email'],
-            'tipo'  => (int) $user['idtipoUsuario'],
+            'tipo'  => (int) $user['idtipousuario'],
         ],
     ]);
 } catch (Exception $e) {

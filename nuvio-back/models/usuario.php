@@ -2,94 +2,78 @@
 
 class Usuario
 {
-    private $conn;
-    private $tabela = "Usuario";
-
+    private $db;
     public $idUsuario;
+    public $idtipoUsuario;
     public $nome;
     public $email;
     public $senhaHash;
+    public $cargo;
+    public $setor;
 
-    public function __construct($conexao)
+    public function __construct($db)
     {
-        $this->conn = $conexao;
+        $this->db = $db;
     }
 
-    public function getAll()
+    public function buscarPorEmail($email)
     {
-        $query = "SELECT idUsuario, nome, email FROM " . $this->tabela;
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt;
-    }
-
-    public function get()
-    {
-        if (!$this->idUsuario) return false;
-
-        $query = "SELECT idUsuario, nome, email FROM " . $this->tabela . " WHERE idUsuario = ? LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$this->idUsuario]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$row) return false;
-
-        $this->idUsuario = $row['idUsuario'];
-        $this->nome      = $row['nome'];
-        $this->email     = $row['email'];
-
-        return true;
-    }
-
-    public function find($id)
-    {
-        $query = "SELECT idUsuario, nome, email FROM " . $this->tabela . " WHERE idUsuario = ? LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-    public function create()
-    {
-        $query = "INSERT INTO " . $this->tabela . " (nome, email, senhaHash) VALUES (?, ?, ?)";
-        $stmt = $this->conn->prepare($query);
-
-        $this->nome  = htmlspecialchars(strip_tags($this->nome));
-        $this->email = htmlspecialchars(strip_tags($this->email));
-        // senhaHash não passa por htmlspecialchars — já vem como hash do password_hash()
-
-        $success = $stmt->execute([$this->nome, $this->email, $this->senhaHash]);
-
-        if ($success) {
-            $this->idUsuario = $this->conn->lastInsertId();
+        $stmt = $this->db->prepare("SELECT * FROM usuario WHERE email = ?");
+        $stmt->execute([$email]);
+        $result = $stmt->fetch();
+        if ($result) {
+            $this->mapUsuario($result);
         }
-
-        return $success;
+        return $result ?: null;
     }
 
-    public function update()
+    public function buscarPorId($id)
     {
-        $query = "UPDATE " . $this->tabela . " SET nome = ?, email = ? WHERE idUsuario = ?";
-        $stmt = $this->conn->prepare($query);
-
-        $this->nome  = htmlspecialchars(strip_tags($this->nome));
-        $this->email = htmlspecialchars(strip_tags($this->email));
-
-        return $stmt->execute([$this->nome, $this->email, $this->idUsuario]);
+        $stmt = $this->db->prepare("SELECT * FROM usuario WHERE idusuario = ?");
+        $stmt->execute([$id]);
+        $result = $stmt->fetch();
+        if ($result) {
+            $this->mapUsuario($result);
+        }
+        return $result ?: null;
     }
 
-    public function updateSenha($novaSenhaHash)
+    public function criar()
     {
-        $query = "UPDATE " . $this->tabela . " SET senhaHash = ? WHERE idUsuario = ?";
-        $stmt = $this->conn->prepare($query);
-        return $stmt->execute([$novaSenhaHash, $this->idUsuario]);
+        $stmt = $this->db->prepare(
+            "INSERT INTO usuario (idtipoUsuario, nome, email, senhaHash, cargo, setor)
+             VALUES (?, ?, ?, ?, ?, ?)
+             RETURNING idusuario"
+        );
+        $result = $stmt->execute([
+            $this->idtipoUsuario,
+            $this->nome,
+            $this->email,
+            $this->senhaHash,
+            $this->cargo,
+            $this->setor
+        ]);
+        if ($result) {
+            $this->idUsuario = $stmt->fetch(PDO::FETCH_ASSOC)['idusuario'];
+        }
+        return $result;
     }
 
-    public function delete()
+    public function emailExiste($email)
     {
-        $query = "DELETE FROM " . $this->tabela . " WHERE idUsuario = ?";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$this->idUsuario]);
-        return $stmt->rowCount() > 0;
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM usuario WHERE email = ?");
+        $stmt->execute([$email]);
+        return $stmt->fetchColumn() > 0;
+    }
+
+    private function mapUsuario($row)
+    {
+        $this->idUsuario = $row['idusuario'] ?? null;
+        $this->idtipoUsuario = $row['idtipoUsuario'] ?? $row['idtipousuario'] ?? null;
+        $this->nome = $row['nome'] ?? null;
+        $this->email = $row['email'] ?? null;
+        $this->senhaHash = $row['senhaHash'] ?? $row['senhahash'] ?? null;
+        $this->cargo = $row['cargo'] ?? null;
+        $this->setor = $row['setor'] ?? null;
     }
 }
