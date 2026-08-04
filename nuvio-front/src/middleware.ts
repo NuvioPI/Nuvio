@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyJWT } from "@/lib/jwt";
 
 const PROTECTED_PATHS = ["/admin", "/dashboard", "/tickets", "/users", "/settings"];
 const PUBLIC_ADMIN_PATHS = ["/admin/login"];
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -22,7 +22,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(loginPath, request.url));
   }
 
-  const payload = await verifyJWT(token);
+  let payload: { tipo?: string } | null = null;
+
+  try {
+    const response = await fetch(`${API_URL}/auth/verificar`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      payload = data.usuario ?? null;
+    }
+  } catch {
+    payload = null;
+  }
 
   if (!payload) {
     const response = NextResponse.redirect(new URL("/admin/login", request.url));

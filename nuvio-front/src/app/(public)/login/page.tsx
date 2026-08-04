@@ -46,9 +46,7 @@ export default function Login() {
       return;
     }
 
-    router.replace(
-      result.usuario.tipo.nome === "Administrador" ? "/admin/dashboard" : "/dashboard"
-    );
+    router.replace("/dashboard");
   };
 
   return (
@@ -72,61 +70,6 @@ export default function Login() {
         "
       />
 
-      {/* MAIN LIGHT */}
-      <motion.div
-        animate={{
-          opacity: [0.4, 0.7, 0.4],
-          scale: [1, 1.05, 1],
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        className="
-          absolute
-          top-[-300px]
-          h-[700px]
-          w-[900px]
-          rounded-full
-          bg-emerald-400/20
-          blur-3xl
-        "
-      />
-
-      {/* LIGHT BEAM */}
-      <motion.div
-        animate={{
-          opacity: [0.15, 0.25, 0.15],
-        }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        className="
-          absolute
-          top-0
-          h-[500px]
-          w-[700px]
-          bg-emerald-300/10
-          blur-[120px]
-          rotate-[-8deg]
-        "
-      />
-
-      {/* EXTRA GLOW */}
-      <div
-        className="
-          absolute
-          top-[20%]
-          h-[400px]
-          w-[400px]
-          rounded-full
-          bg-emerald-500/10
-          blur-[120px]
-        "
-      />
 
       {/* CARD */}
       <motion.div
@@ -150,17 +93,16 @@ export default function Login() {
           z-10
           w-full
           max-w-md
-          rounded-[32px]
+          rounded-[20px]
           border
           border-white/10
           bg-white/[0.03]
           backdrop-blur-2xl
           p-8
-          shadow-[0_0_80px_rgba(16,185,129,0.12)]
         `}
       >
         {/* TITLE */}
-        <h1 className="text-5xl font-bold text-white">
+        <h1 className="text-3xl font-bold text-white">
           Welcome to{" "}
           <span
             className={
@@ -256,10 +198,9 @@ export default function Login() {
               text-black
               transition-all
               duration-300
-              hover:scale-[1.02]
-              hover:bg-emerald-100
+
+              hover:bg-gray-100
               active:scale-[0.99]
-              shadow-[0_0_40px_rgba(255,255,255,0.15)]
               cursor-pointer
               disabled:cursor-not-allowed
               disabled:opacity-70
@@ -343,7 +284,7 @@ export default function Login() {
                   group-hover:opacity-100
                 "
               >
-                Entrar com Google
+              Entrar com Google
               </span>
             </button>
           </div>

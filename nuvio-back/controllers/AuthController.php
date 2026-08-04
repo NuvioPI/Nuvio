@@ -127,7 +127,7 @@ class AuthController
     {
         $query = '
             SELECT u.*, tu.descricao AS tipo
-            FROM usuario u
+            FROM Usuario u
             INNER JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
             WHERE u.email = ?
             LIMIT 1

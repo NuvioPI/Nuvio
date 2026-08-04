@@ -86,6 +86,12 @@ if ($uri === '/auth/login' && $method === 'POST') {
     exit();
 }
 
+if ($uri === '/auth/verificar' && $method === 'GET') {
+    $usuarioAutenticado = autenticar();
+    echo json_encode(['usuario' => $usuarioAutenticado]);
+    exit();
+}
+
 // -------------------------------------------------------
 // Rotas protegidas — requerem token JWT válido
 // -------------------------------------------------------
