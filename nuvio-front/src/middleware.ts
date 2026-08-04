@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJWT } from "@/lib/jwt";
 
-const PROTECTED_PATHS = ["/admin"];
+const PROTECTED_PATHS = ["/admin", "/dashboard", "/Chamados", "/nChamados", "/Usuarios", "/settings"];
 const PUBLIC_ADMIN_PATHS = ["/admin/login"];
 
 export async function middleware(request: NextRequest) {
@@ -23,6 +23,12 @@ export async function middleware(request: NextRequest) {
   const payload = await verifyJWT(token);
 
   if (!payload) {
+    const response = NextResponse.redirect(new URL("/admin/login", request.url));
+    response.cookies.delete("token");
+    return response;
+  }
+
+  if (pathname.startsWith("/admin") && payload.tipo !== "Administrador") {
     const response = NextResponse.redirect(new URL("/admin/login", request.url));
     response.cookies.delete("token");
     return response;

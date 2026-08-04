@@ -14,7 +14,7 @@ export async function loginAction(formData: FormData) {
 
   try {
     // Configura a URL base da sua API PHP (ajuste no .env se necessário, ex: php -S localhost:8000)
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost/nuvio-back/routes/api.php";
+    const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost/nuvio-back/routes/api.php").replace(/\/$/, "");
     
     const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
@@ -26,8 +26,12 @@ export async function loginAction(formData: FormData) {
 
     const data = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok || !data.token || !data.usuario) {
       return { error: data.erro || "Credenciais inválidas." };
+    }
+
+    if (data.usuario.tipo?.nome !== "Administrador") {
+      return { error: "Acesso restrito a administradores." };
     }
 
     // Recebe o token JWT assinado pelo backend PHP
@@ -36,7 +40,7 @@ export async function loginAction(formData: FormData) {
     // Salva nos cookies (HttpOnly, seguro)
     const cookieStore = await cookies();
     cookieStore.set({
-      name: "nuvio_admin_token",
+      name: "token",
       value: token,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -55,6 +59,6 @@ export async function loginAction(formData: FormData) {
 
 export async function logoutAction() {
   const cookieStore = await cookies();
-  cookieStore.delete("nuvio_admin_token");
+  cookieStore.delete("token");
   redirect("/admin/login");
 }

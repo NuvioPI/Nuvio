@@ -327,7 +327,7 @@ function Navbar() {
             href="/login"
             className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors px-3 py-1.5"
           >
-            Entrar
+            Acessar
           </Link>
           <Link
             href="/login"

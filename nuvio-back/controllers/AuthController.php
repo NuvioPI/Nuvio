@@ -87,6 +87,7 @@ class AuthController
             'idUsuario' => $usuario['idUsuario'],
             'email'     => $usuario['email'],
             'nome'      => $usuario['nome'],
+            'tipo'      => $usuario['tipo'],
         ]);
 
         http_response_code(200);
@@ -97,6 +98,10 @@ class AuthController
                 'id'    => $usuario['idUsuario'],
                 'nome'  => $usuario['nome'],
                 'email' => $usuario['email'],
+                'tipo'  => [
+                    'id'   => (int) $usuario['idtipoUsuario'],
+                    'nome' => $usuario['tipo'],
+                ],
             ]
         ]);
     }
@@ -107,7 +112,14 @@ class AuthController
 
     private function buscarPorEmail($email)
     {
-        $query = "SELECT idUsuario, nome, email, senhaHash FROM Usuario WHERE email = ? LIMIT 1";
+        $query = "
+            SELECT u.idUsuario, u.nome, u.email, u.senhaHash, u.idtipoUsuario,
+                   tu.descricao AS tipo
+            FROM Usuario u
+            INNER JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
+            WHERE u.email = ?
+            LIMIT 1
+        ";
         $stmt = $this->db->prepare($query);
         $stmt->execute([$email]);
         return $stmt->fetch(PDO::FETCH_ASSOC);

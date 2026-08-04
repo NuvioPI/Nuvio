@@ -8,13 +8,20 @@ interface Usuario {
   id: number;
   nome: string;
   email: string;
-  tipo: number;
+  tipo: {
+    id: number;
+    nome: string;
+  };
 }
 
 interface AuthContextType {
   usuario: Usuario | null;
   token: string | null;
-  login: (email: string, senha: string) => Promise<{ sucesso: boolean; erro?: string }>;
+  login: (
+    email: string,
+    senha: string,
+    opcoes?: { somenteAdministrador?: boolean }
+  ) => Promise<{ sucesso: boolean; erro?: string; usuario?: Usuario }>;
   logout: () => void;
   carregando: boolean;
 }
@@ -53,9 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCarregando(false);
   }, []);
 
-  async function login(email: string, senha: string) {
+  async function login(
+    email: string,
+    senha: string,
+    opcoes: { somenteAdministrador?: boolean } = {}
+  ) {
     try {
-      const res = await fetch(`${API_URL}/loginAdmin.php`, {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, senha }),
@@ -63,8 +74,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await res.json();
 
-      if (!res.ok || !data.sucesso) {
+      if (!res.ok || !data.token || !data.usuario) {
         return { sucesso: false, erro: data.erro || 'Erro ao fazer login' };
+      }
+
+      if (opcoes.somenteAdministrador && data.usuario.tipo?.nome !== 'Administrador') {
+        return { sucesso: false, erro: 'Acesso restrito a administradores.' };
       }
 
       setCookie('token', data.token, 8); // 8h, igual expiração do JWT no back
@@ -72,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(data.token);
       setUsuario(data.usuario);
 
-      return { sucesso: true };
+      return { sucesso: true, usuario: data.usuario };
     } catch (err) {
       return { sucesso: false, erro: 'Não foi possível conectar ao servidor' };
     }

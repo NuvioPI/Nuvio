@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 import { motion } from "framer-motion";
 
@@ -23,35 +25,30 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] =
     useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { login } = useAuth();
 
   const handleLogin = async (
     e: React.FormEvent
   ) => {
     e.preventDefault();
 
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        }
-      );
+    setError("");
+    setIsLoading(true);
 
-      const data =
-        await response.json();
+    const result = await login(email, password);
+    setIsLoading(false);
 
-      console.log(data);
-    } catch (error) {
-      console.error(error);
+    if (!result.sucesso || !result.usuario) {
+      setError(result.erro || "Não foi possível entrar.");
+      return;
     }
+
+    router.replace(
+      result.usuario.tipo.nome === "Administrador" ? "/admin/dashboard" : "/dashboard"
+    );
   };
 
   return (
@@ -248,6 +245,7 @@ export default function Login() {
           {/* BUTTON */}
           <button
             type="submit"
+            disabled={isLoading}
             className="
               mt-6
               w-full
@@ -263,10 +261,18 @@ export default function Login() {
               active:scale-[0.99]
               shadow-[0_0_40px_rgba(255,255,255,0.15)]
               cursor-pointer
+              disabled:cursor-not-allowed
+              disabled:opacity-70
             "
           >
-            Login
+            {isLoading ? "Entrando..." : "Login"}
           </button>
+
+          {error && (
+            <p className="mt-4 text-sm text-red-300" role="alert">
+              {error}
+            </p>
+          )}
 
           {/* DIVIDER */}
           <p

@@ -31,7 +31,7 @@ export default function LoginPage() {
     setErro("");
     setCarregando(true);
 
-    const resultado = await login(email, senha);
+    const resultado = await login(email, senha, { somenteAdministrador: true });
 
     setCarregando(false);
 
