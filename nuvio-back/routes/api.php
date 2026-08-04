@@ -94,17 +94,46 @@ $usuarioAutenticado = autenticar();
 // Extrair ID da URI para rotas com parâmetro (ex: /tickets/5)
 $uriParts = explode('/', ltrim($uri, '/'));
 $recurso  = $uriParts[0] ?? '';
-$id       = isset($uriParts[1]) && is_numeric($uriParts[1]) ? (int)$uriParts[1] : null;
+$segmentoId = $uriParts[1] ?? null;
+$id       = $segmentoId !== null && is_numeric($segmentoId) ? (int)$segmentoId : null;
+$subrecurso = $uriParts[2] ?? null;
 
 // --- Tickets ---
 if ($recurso === 'tickets') {
-    $controller = new TicketController();
-    if ($method === 'GET' && !$id)      $controller->index();
-    elseif ($method === 'GET' && $id)   $controller->show($id);
-    elseif ($method === 'POST')         $controller->store();
-    elseif ($method === 'PUT' && $id)   $controller->update($id);
-    elseif ($method === 'DELETE' && $id) $controller->destroy($id);
-    else { http_response_code(405); echo json_encode(['erro' => 'Método não permitido.']); }
+    $controller = new TicketController(
+        (int) $usuarioAutenticado['idUsuario']
+    );
+    
+    if ($method === 'GET' && $segmentoId === null) {
+        $controller->index();
+    } elseif (
+        $method === 'GET' &&
+        $id &&
+        $subrecurso === 'historico'
+    ) {
+        $controller->historico($id);
+    } elseif ($method === 'GET' && $id && !$subrecurso) {
+        $controller->show($id);
+    } elseif ($method === 'POST' && $segmentoId === null) {
+        $controller->store();
+    } elseif ($method === 'PUT' && !$subrecurso) {
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'ID do ticket é obrigatório para atualizar.']);
+        } else {
+            $controller->update($id);
+        }
+    } elseif ($method === 'DELETE' && !$subrecurso) {
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'ID do ticket é obrigatório para deletar.']);
+        } else {
+            $controller->destroy($id);
+        }
+    } else {
+        http_response_code(405);
+        echo json_encode(['erro' => 'Método não permitido.']);
+    }
     exit();
 }
 
@@ -119,36 +148,93 @@ if ($recurso === 'categorias') {
     }
     
     $controller = new CategoriaController();
-    if ($method === 'GET' && !$id)      $controller->index();
-    elseif ($method === 'GET' && $id)   $controller->show($id);
-    elseif ($method === 'POST')         $controller->store();
-    elseif ($method === 'PUT' && $id)   $controller->update($id);
-    elseif ($method === 'DELETE' && $id) $controller->destroy($id);
-    else { http_response_code(405); echo json_encode(['erro' => 'Método não permitido.']); }
+    
+    if ($method === 'GET' && !$id) {
+        $controller->index();
+    } elseif ($method === 'GET' && $id) {
+        $controller->show($id);
+    } elseif ($method === 'POST') {
+        $controller->store();
+    } elseif ($method === 'PUT') {
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'ID da categoria é obrigatório para atualizar.']);
+        } else {
+            $controller->update($id);
+        }
+    } elseif ($method === 'DELETE') {
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'ID da categoria é obrigatório para deletar.']);
+        } else {
+            $controller->destroy($id);
+        }
+    } else {
+        http_response_code(405);
+        echo json_encode(['erro' => 'Método não permitido.']);
+    }
     exit();
 }
 
 // --- SLA ---
 if ($recurso === 'sla') {
     $controller = new SLAController();
-    if ($method === 'GET' && !$id)      $controller->index();
-    elseif ($method === 'GET' && $id)   $controller->show($id);
-    elseif ($method === 'POST')         $controller->store();
-    elseif ($method === 'PUT' && $id)   $controller->update($id);
-    elseif ($method === 'DELETE' && $id) $controller->destroy($id);
-    else { http_response_code(405); echo json_encode(['erro' => 'Método não permitido.']); }
+    
+    if ($method === 'GET' && !$id) {
+        $controller->index();
+    } elseif ($method === 'GET' && $id) {
+        $controller->show($id);
+    } elseif ($method === 'POST') {
+        $controller->store();
+    } elseif ($method === 'PUT') {
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'ID do SLA é obrigatório para atualizar.']);
+        } else {
+            $controller->update($id);
+        }
+    } elseif ($method === 'DELETE') {
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'ID do SLA é obrigatório para deletar.']);
+        } else {
+            $controller->destroy($id);
+        }
+    } else {
+        http_response_code(405);
+        echo json_encode(['erro' => 'Método não permitido.']);
+    }
     exit();
 }
 
 // --- Respostas de Ticket ---
 if ($recurso === 'respostas') {
     $controller = new RespostaTicketController();
-    if ($method === 'GET' && !$id)      $controller->index();
-    elseif ($method === 'GET' && $id)   $controller->show($id);
-    elseif ($method === 'POST')         $controller->store();
-    elseif ($method === 'PUT' && $id)   $controller->update($id);
-    elseif ($method === 'DELETE' && $id) $controller->destroy($id);
-    else { http_response_code(405); echo json_encode(['erro' => 'Método não permitido.']); }
+    
+    if ($method === 'GET' && !$id) {
+        $controller->index();
+    } elseif ($method === 'GET' && $id) {
+        $controller->show($id);
+    } elseif ($method === 'POST') {
+        $controller->store();
+    } elseif ($method === 'PUT') {
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'ID da resposta é obrigatório para atualizar.']);
+        } else {
+            $controller->update($id);
+        }
+    } elseif ($method === 'DELETE') {
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'ID da resposta é obrigatório para deletar.']);
+        } else {
+            $controller->destroy($id);
+        }
+    } else {
+        http_response_code(405);
+        echo json_encode(['erro' => 'Método não permitido.']);
+    }
     exit();
 }
 

@@ -72,7 +72,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, senha }),
       });
 
-      const data = await res.json();
+      let data: { sucesso?: boolean; erro?: string; token?: string; usuario?: Usuario } = {};
+      try {
+        data = await res.json();
+      } catch {
+        return {
+          sucesso: false,
+          erro: `Resposta inválida do servidor (${res.status}). Verifique se o backend PHP está rodando.`,
+        };
+      }
 
       if (!res.ok || !data.token || !data.usuario) {
         return { sucesso: false, erro: data.erro || 'Erro ao fazer login' };
@@ -82,10 +90,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { sucesso: false, erro: 'Acesso restrito a administradores.' };
       }
 
-      setCookie('token', data.token, 8); // 8h, igual expiração do JWT no back
+      setCookie('token', data.token!, 8);
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
-      setToken(data.token);
-      setUsuario(data.usuario);
+      setToken(data.token!);
+      setUsuario(data.usuario!);
 
       return { sucesso: true, usuario: data.usuario };
     } catch (err) {

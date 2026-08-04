@@ -15,11 +15,11 @@ import { Settings } from "@/components/animate-ui/icons/settings";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-  { icon: MessageSquareText, label: "Chamados", href: "/chamados" },
-  { icon: Plus, label: "Novo Chamado", href: "/nChamados" },
-  { icon: Layers, label: "Base de Conhecimento", href: "/base-conhecimento" },
-  { icon: UsersRound, label: "Usuários", href: "/usuarios" },
-  { icon: ChartSpline, label: "Relatórios", href: "/relatorios" },
+  { icon: MessageSquareText, label: "Chamados", href: "/tickets" },
+  { icon: Plus, label: "Novo Chamado", href: "/tickets/new" },
+  { icon: Layers, label: "Base de Conhecimento", href: "/knowledge-base" },
+  { icon: UsersRound, label: "Usuários", href: "/users" },
+  { icon: ChartSpline, label: "Relatórios", href: "/reports" },
   { icon: Settings, label: "Configurações", href: "/settings" },
 ];
 

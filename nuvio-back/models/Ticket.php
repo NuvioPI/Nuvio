@@ -3,15 +3,15 @@
 class Ticket
 {
     private $conn;
-    private $tabela = "Ticket";
+    private $tabela = 'Ticket';
 
-    // Campos
     public $idTicket;
     public $idTecnico;
     public $idUsuario;
     public $idCategoria;
     public $idSLA;
     public $titulo;
+    public $descricao;
     public $statusTicket;
     public $prioridade;
     public $dataAbertura;
@@ -27,7 +27,12 @@ class Ticket
         $query = "
             SELECT
                 t.idTicket,
+                t.idTecnico,
+                t.idUsuario,
+                t.idCategoria,
+                t.idSLA,
                 t.titulo,
+                t.descricao,
                 t.statusTicket,
                 t.prioridade,
                 t.dataAbertura,
@@ -37,17 +42,23 @@ class Ticket
                 us.nome AS nomeTecnico,
                 c.nomeCategoria,
                 s.nomeSLA
-            FROM " . $this->tabela . " t
-            INNER JOIN Usuario u ON t.idUsuario = u.idUsuario
-            INNER JOIN Tecnico tc ON t.idTecnico = tc.idTecnico
-            INNER JOIN Usuario us ON tc.idUsuario = us.idUsuario
-            INNER JOIN Categoria c ON t.idCategoria = c.idCategoria
-            INNER JOIN SLA s ON t.idSLA = s.idSLA
+            FROM {$this->tabela} t
+            INNER JOIN Usuario u
+                ON t.idUsuario = u.idUsuario
+            INNER JOIN Tecnico tc
+                ON t.idTecnico = tc.idTecnico
+            INNER JOIN Usuario us
+                ON tc.idUsuario = us.idUsuario
+            INNER JOIN Categoria c
+                ON t.idCategoria = c.idCategoria
+            INNER JOIN SLA s
+                ON t.idSLA = s.idSLA
             ORDER BY t.dataAbertura DESC
         ";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
+
         return $stmt;
     }
 
@@ -56,33 +67,44 @@ class Ticket
         $query = "
             SELECT
                 t.idTicket,
+                t.idTecnico,
+                t.idUsuario,
+                t.idCategoria,
+                t.idSLA,
                 t.titulo,
+                t.descricao,
                 t.statusTicket,
                 t.prioridade,
                 t.dataAbertura,
                 t.dataFechamento,
-                t.idUsuario,
-                t.idTecnico,
-                t.idCategoria,
-                t.idSLA,
                 u.nome AS nomeUsuario,
+                u.email AS emailUsuario,
                 us.nome AS nomeTecnico,
                 c.nomeCategoria,
                 s.nomeSLA,
                 s.tempoResposta,
                 s.tempoResolucao
-            FROM " . $this->tabela . " t
-            INNER JOIN Usuario u ON t.idUsuario = u.idUsuario
-            INNER JOIN Tecnico tc ON t.idTecnico = tc.idTecnico
-            INNER JOIN Usuario us ON tc.idUsuario = us.idUsuario
-            INNER JOIN Categoria c ON t.idCategoria = c.idCategoria
-            INNER JOIN SLA s ON t.idSLA = s.idSLA
+            FROM {$this->tabela} t
+            INNER JOIN Usuario u
+                ON t.idUsuario = u.idUsuario
+            INNER JOIN Tecnico tc
+                ON t.idTecnico = tc.idTecnico
+            INNER JOIN Usuario us
+                ON tc.idUsuario = us.idUsuario
+            INNER JOIN Categoria c
+                ON t.idCategoria = c.idCategoria
+            INNER JOIN SLA s
+                ON t.idSLA = s.idSLA
             WHERE t.idTicket = :idTicket
             LIMIT 1
         ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':idTicket', $this->idTicket, PDO::PARAM_INT);
+        $stmt->bindValue(
+            ':idTicket',
+            (int) $this->idTicket,
+            PDO::PARAM_INT
+        );
         $stmt->execute();
 
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -91,56 +113,74 @@ class Ticket
             return false;
         }
 
-        foreach ($row as $key => $value) {
-            if (property_exists($this, $key)) {
-                $this->$key = $value;
+        foreach ($row as $campo => $valor) {
+            if (property_exists($this, $campo)) {
+                $this->$campo = $valor;
             }
         }
 
         return true;
     }
 
-    // Listar tickets por usuário (cliente vê só os seus)
     public function getByUsuario()
     {
         $query = "
             SELECT
                 t.idTicket,
+                t.idTecnico,
+                t.idUsuario,
+                t.idCategoria,
+                t.idSLA,
                 t.titulo,
+                t.descricao,
                 t.statusTicket,
                 t.prioridade,
                 t.dataAbertura,
                 t.dataFechamento,
                 c.nomeCategoria,
                 s.nomeSLA
-            FROM " . $this->tabela . " t
-            INNER JOIN Categoria c ON t.idCategoria = c.idCategoria
-            INNER JOIN SLA s ON t.idSLA = s.idSLA
+            FROM {$this->tabela} t
+            INNER JOIN Categoria c
+                ON t.idCategoria = c.idCategoria
+            INNER JOIN SLA s
+                ON t.idSLA = s.idSLA
             WHERE t.idUsuario = :idUsuario
             ORDER BY t.dataAbertura DESC
         ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':idUsuario', $this->idUsuario, PDO::PARAM_INT);
+        $stmt->bindValue(
+            ':idUsuario',
+            (int) $this->idUsuario,
+            PDO::PARAM_INT
+        );
         $stmt->execute();
+
         return $stmt;
     }
 
-    // Listar tickets por técnico
     public function getByTecnico()
     {
         $query = "
             SELECT
                 t.idTicket,
+                t.idTecnico,
+                t.idUsuario,
+                t.idCategoria,
+                t.idSLA,
                 t.titulo,
+                t.descricao,
                 t.statusTicket,
                 t.prioridade,
                 t.dataAbertura,
+                t.dataFechamento,
                 u.nome AS nomeUsuario,
                 c.nomeCategoria
-            FROM " . $this->tabela . " t
-            INNER JOIN Usuario u ON t.idUsuario = u.idUsuario
-            INNER JOIN Categoria c ON t.idCategoria = c.idCategoria
+            FROM {$this->tabela} t
+            INNER JOIN Usuario u
+                ON t.idUsuario = u.idUsuario
+            INNER JOIN Categoria c
+                ON t.idCategoria = c.idCategoria
             WHERE t.idTecnico = :idTecnico
             ORDER BY
                 FIELD(t.prioridade, 'Alta', 'Media', 'Baixa'),
@@ -148,95 +188,318 @@ class Ticket
         ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':idTecnico', $this->idTecnico, PDO::PARAM_INT);
+        $stmt->bindValue(
+            ':idTecnico',
+            (int) $this->idTecnico,
+            PDO::PARAM_INT
+        );
         $stmt->execute();
+
         return $stmt;
     }
 
-    // Criar ticket
     public function create()
     {
         $query = "
-            INSERT INTO " . $this->tabela . "
-                (idTecnico, idUsuario, idCategoria, idSLA, titulo, statusTicket, prioridade, dataAbertura)
+            INSERT INTO {$this->tabela}
+            (
+                idTecnico,
+                idUsuario,
+                idCategoria,
+                idSLA,
+                titulo,
+                descricao,
+                statusTicket,
+                prioridade,
+                dataAbertura,
+                dataFechamento
+            )
             VALUES
-                (:idTecnico, :idUsuario, :idCategoria, :idSLA, :titulo, :statusTicket, :prioridade, NOW())
+            (
+                :idTecnico,
+                :idUsuario,
+                :idCategoria,
+                :idSLA,
+                :titulo,
+                :descricao,
+                :statusTicket,
+                :prioridade,
+                NOW(),
+                NULL
+            )
+        ";
+
+        $this->titulo = $this->limparTexto($this->titulo);
+        $this->descricao = $this->limparTexto($this->descricao);
+        $this->prioridade = $this->limparTexto($this->prioridade);
+        $this->statusTicket = 'Aberto';
+
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->bindValue(
+            ':idTecnico',
+            (int) $this->idTecnico,
+            PDO::PARAM_INT
+        );
+
+        $stmt->bindValue(
+            ':idUsuario',
+            (int) $this->idUsuario,
+            PDO::PARAM_INT
+        );
+
+        $stmt->bindValue(
+            ':idCategoria',
+            (int) $this->idCategoria,
+            PDO::PARAM_INT
+        );
+
+        $stmt->bindValue(
+            ':idSLA',
+            (int) $this->idSLA,
+            PDO::PARAM_INT
+        );
+
+        $stmt->bindValue(':titulo', $this->titulo, PDO::PARAM_STR);
+        $stmt->bindValue(':descricao', $this->descricao, PDO::PARAM_STR);
+        $stmt->bindValue(':statusTicket', $this->statusTicket, PDO::PARAM_STR);
+        $stmt->bindValue(':prioridade', $this->prioridade, PDO::PARAM_STR);
+
+        if (!$stmt->execute()) {
+            return false;
+        }
+
+        $this->idTicket = (int) $this->conn->lastInsertId();
+
+        return true;
+    }
+
+    public function update()
+    {
+        $campos = [];
+        $parametros = [];
+
+        if ($this->titulo !== null) {
+            $this->titulo = $this->limparTexto($this->titulo);
+
+            $campos[] = 'titulo = :titulo';
+            $parametros[':titulo'] = $this->titulo;
+        }
+
+        if ($this->descricao !== null) {
+            $this->descricao = $this->limparTexto($this->descricao);
+
+            $campos[] = 'descricao = :descricao';
+            $parametros[':descricao'] = $this->descricao;
+        }
+
+        if ($this->statusTicket !== null) {
+            $this->statusTicket = $this->limparTexto(
+                $this->statusTicket
+            );
+
+            $campos[] = 'statusTicket = :statusTicket';
+            $parametros[':statusTicket'] = $this->statusTicket;
+
+            /*
+             * Ao fechar, registra a data somente se ainda não existir.
+             * Ao reabrir ou alterar para outro status, remove a data.
+             */
+            if (strcasecmp($this->statusTicket, 'Fechado') === 0) {
+                $campos[] = '
+                    dataFechamento = COALESCE(
+                        dataFechamento,
+                        NOW()
+                    )
+                ';
+            } else {
+                $campos[] = 'dataFechamento = NULL';
+            }
+        }
+
+        if ($this->prioridade !== null) {
+            $this->prioridade = $this->limparTexto(
+                $this->prioridade
+            );
+
+            $campos[] = 'prioridade = :prioridade';
+            $parametros[':prioridade'] = $this->prioridade;
+        }
+
+        if ($this->idTecnico !== null) {
+            $campos[] = 'idTecnico = :idTecnico';
+            $parametros[':idTecnico'] = (int) $this->idTecnico;
+        }
+
+        if ($this->idUsuario !== null) {
+            $campos[] = 'idUsuario = :idUsuario';
+            $parametros[':idUsuario'] = (int) $this->idUsuario;
+        }
+
+        if ($this->idCategoria !== null) {
+            $campos[] = 'idCategoria = :idCategoria';
+            $parametros[':idCategoria'] = (int) $this->idCategoria;
+        }
+
+        if ($this->idSLA !== null) {
+            $campos[] = 'idSLA = :idSLA';
+            $parametros[':idSLA'] = (int) $this->idSLA;
+        }
+
+        if (empty($campos)) {
+            return false;
+        }
+
+        $query = "
+            UPDATE {$this->tabela}
+            SET " . implode(', ', $campos) . "
+            WHERE idTicket = :idTicket
         ";
 
         $stmt = $this->conn->prepare($query);
 
-        $this->titulo = htmlspecialchars(strip_tags($this->titulo));
-        $this->prioridade = htmlspecialchars(strip_tags($this->prioridade));
-
-        // Status padrão ao abrir
-        $this->statusTicket = 'Aberto';
-
-        $stmt->bindParam(':idTecnico',   $this->idTecnico,   PDO::PARAM_INT);
-        $stmt->bindParam(':idUsuario',   $this->idUsuario,   PDO::PARAM_INT);
-        $stmt->bindParam(':idCategoria', $this->idCategoria, PDO::PARAM_INT);
-        $stmt->bindParam(':idSLA',       $this->idSLA,       PDO::PARAM_INT);
-        $stmt->bindParam(':titulo',      $this->titulo);
-        $stmt->bindParam(':statusTicket',$this->statusTicket);
-        $stmt->bindParam(':prioridade',  $this->prioridade);
-
-        if ($stmt->execute()) {
-            $this->idTicket = $this->conn->lastInsertId();
-            return true;
+        foreach ($parametros as $nome => $valor) {
+            if (is_int($valor)) {
+                $stmt->bindValue(
+                    $nome,
+                    $valor,
+                    PDO::PARAM_INT
+                );
+            } else {
+                $stmt->bindValue(
+                    $nome,
+                    $valor,
+                    PDO::PARAM_STR
+                );
+            }
         }
 
-        return false;
+        $stmt->bindValue(
+            ':idTicket',
+            (int) $this->idTicket,
+            PDO::PARAM_INT
+        );
+
+        return $stmt->execute();
     }
 
-    // Atualizar status do ticket
     public function updateStatus()
     {
-        $query = "UPDATE " . $this->tabela . "
-                  SET statusTicket = :statusTicket
-                  WHERE idTicket = :idTicket";
+        $this->statusTicket = $this->limparTexto(
+            $this->statusTicket
+        );
+
+        if (strcasecmp($this->statusTicket, 'Fechado') === 0) {
+            $query = "
+                UPDATE {$this->tabela}
+                SET
+                    statusTicket = :statusTicket,
+                    dataFechamento = COALESCE(
+                        dataFechamento,
+                        NOW()
+                    )
+                WHERE idTicket = :idTicket
+            ";
+        } else {
+            $query = "
+                UPDATE {$this->tabela}
+                SET
+                    statusTicket = :statusTicket,
+                    dataFechamento = NULL
+                WHERE idTicket = :idTicket
+            ";
+        }
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':statusTicket', $this->statusTicket);
-        $stmt->bindParam(':idTicket',     $this->idTicket, PDO::PARAM_INT);
+
+        $stmt->bindValue(
+            ':statusTicket',
+            $this->statusTicket,
+            PDO::PARAM_STR
+        );
+
+        $stmt->bindValue(
+            ':idTicket',
+            (int) $this->idTicket,
+            PDO::PARAM_INT
+        );
 
         return $stmt->execute();
     }
 
-    // Fechar ticket (define dataFechamento)
     public function fechar()
     {
-        $query = "UPDATE " . $this->tabela . "
-                  SET statusTicket = 'Fechado', dataFechamento = NOW()
-                  WHERE idTicket = :idTicket";
+        $query = "
+            UPDATE {$this->tabela}
+            SET
+                statusTicket = 'Fechado',
+                dataFechamento = COALESCE(
+                    dataFechamento,
+                    NOW()
+                )
+            WHERE idTicket = :idTicket
+        ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':idTicket', $this->idTicket, PDO::PARAM_INT);
+
+        $stmt->bindValue(
+            ':idTicket',
+            (int) $this->idTicket,
+            PDO::PARAM_INT
+        );
 
         return $stmt->execute();
     }
 
-    // Reatribuir técnico
     public function reatribuir()
     {
-        $query = "UPDATE " . $this->tabela . "
-                  SET idTecnico = :idTecnico
-                  WHERE idTicket = :idTicket";
+        $query = "
+            UPDATE {$this->tabela}
+            SET idTecnico = :idTecnico
+            WHERE idTicket = :idTicket
+        ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':idTecnico', $this->idTecnico, PDO::PARAM_INT);
-        $stmt->bindParam(':idTicket',  $this->idTicket,  PDO::PARAM_INT);
+
+        $stmt->bindValue(
+            ':idTecnico',
+            (int) $this->idTecnico,
+            PDO::PARAM_INT
+        );
+
+        $stmt->bindValue(
+            ':idTicket',
+            (int) $this->idTicket,
+            PDO::PARAM_INT
+        );
 
         return $stmt->execute();
     }
 
-    // Deletar ticket (cuidado: apaga respostas e anexos em cascata se configurado no BD)
     public function delete()
     {
-        $query = "DELETE FROM " . $this->tabela . " WHERE idTicket = :idTicket";
+        $query = "
+            DELETE FROM {$this->tabela}
+            WHERE idTicket = :idTicket
+        ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':idTicket', $this->idTicket, PDO::PARAM_INT);
-        $stmt->execute();
+
+        $stmt->bindValue(
+            ':idTicket',
+            (int) $this->idTicket,
+            PDO::PARAM_INT
+        );
+
+        if (!$stmt->execute()) {
+            return false;
+        }
 
         return $stmt->rowCount() > 0;
+    }
+
+    private function limparTexto($valor)
+    {
+        return trim(strip_tags((string) $valor));
     }
 }
