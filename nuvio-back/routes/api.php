@@ -5,6 +5,18 @@ require_once __DIR__ . '/../vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
 
+$origemPermitida = $_ENV['CORS_ORIGIN'] ?? 'http://localhost:3000';
+$origemRequisicao = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+if ($origemRequisicao === $origemPermitida) {
+    header('Access-Control-Allow-Origin: ' . $origemRequisicao);
+    header('Vary: Origin');
+}
+
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Content-Type: application/json; charset=UTF-8');
+
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/jwt.php';
 require_once __DIR__ . '/../middleware/auth.php';
