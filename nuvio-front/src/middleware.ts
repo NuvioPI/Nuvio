@@ -12,13 +12,15 @@ export async function middleware(request: NextRequest) {
   }
 
   const isProtected = PROTECTED_PATHS.some((path) => pathname.startsWith(path));
-  if (!isProtected) return NextResponse.next();
+  const isLoginPage = pathname === "/login";
+  if (!isProtected && !isLoginPage) return NextResponse.next();
 
   const loginPath = pathname.startsWith("/admin") ? "/admin/login" : "/login";
 
   const token = request.cookies.get("token")?.value;
 
   if (!token) {
+    if (isLoginPage) return NextResponse.next();
     return NextResponse.redirect(new URL(loginPath, request.url));
   }
 
@@ -39,9 +41,19 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!payload) {
-    const response = NextResponse.redirect(new URL("/admin/login", request.url));
+    if (isLoginPage) {
+      const response = NextResponse.next();
+      response.cookies.delete("token");
+      return response;
+    }
+
+    const response = NextResponse.redirect(new URL(loginPath, request.url));
     response.cookies.delete("token");
     return response;
+  }
+
+  if (isLoginPage) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   if (pathname.startsWith("/admin") && payload.tipo !== "Administrador") {
@@ -54,5 +66,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/dashboard/:path*", "/tickets/:path*", "/users/:path*", "/settings/:path*"],
+  matcher: ["/login", "/admin/:path*", "/dashboard/:path*", "/tickets/:path*", "/users/:path*", "/settings/:path*"],
 };
