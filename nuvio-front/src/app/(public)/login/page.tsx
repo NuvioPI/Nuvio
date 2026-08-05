@@ -198,7 +198,6 @@ export default function Login() {
               text-black
               transition-all
               duration-300
-
               hover:bg-gray-100
               active:scale-[0.99]
               cursor-pointer
