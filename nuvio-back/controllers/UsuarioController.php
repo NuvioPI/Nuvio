@@ -42,6 +42,9 @@ class UsuarioController extends BaseController
         $this->usuario->nome = $body['nome'];
         $this->usuario->email = $body['email'];
         $this->usuario->senhaHash = password_hash($body['senha'], PASSWORD_BCRYPT);
+        $this->usuario->idtipoUsuario = (int) ($body['idtipoUsuario'] ?? 1);
+        $this->usuario->cargo = $body['cargo'] ?? '';
+        $this->usuario->setor = $body['setor'] ?? '';
 
         if ($this->usuario->create()) {
             $this->respond([
@@ -64,8 +67,6 @@ class UsuarioController extends BaseController
         }
 
         $this->usuario->idUsuario = $id;
-        $this->usuario->nome = $body['nome'];
-        $this->usuario->email = $body['email'];
 
         if (!$this->usuario->get()) {
             $this->respond(['erro' => 'Usuário não encontrado.'], 404);
@@ -74,6 +75,8 @@ class UsuarioController extends BaseController
 
         $this->usuario->nome = $body['nome'];
         $this->usuario->email = $body['email'];
+        $this->usuario->cargo = $body['cargo'] ?? $this->usuario->cargo;
+        $this->usuario->setor = $body['setor'] ?? $this->usuario->setor;
 
         if ($this->usuario->update()) {
             if (!empty($body['senha'])) {

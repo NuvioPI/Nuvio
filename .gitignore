@@ -1,0 +1,7 @@
+# Segredos locais
+nuvio-back/.env
+nuvio-back/.env.local
+
+# Dependências e artefatos locais
+nuvio-back/vendor/
+node_modules/

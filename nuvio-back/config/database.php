@@ -17,7 +17,7 @@ class DB
         $this->dbname   = env('DB_NAME', 'defaultdb');
         $this->username = env('DB_USER', 'avnadmin');
         $this->password = env('DB_PASS', '');
-        $this->port     = env('DB_PORT', '27687');
+        $this->port     = env('DB_PORT', '3306');
     }
 
     public function getConnection()
@@ -39,18 +39,22 @@ class DB
                 $this->dbname
             );
 
+            $opcoes = [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ];
+
+            $certificadoCa = env('DB_SSL_CA', __DIR__ . '/../certs/ca.pem');
+            if ($certificadoCa && file_exists($certificadoCa)) {
+                $opcoes[PDO::MYSQL_ATTR_SSL_CA] = $certificadoCa;
+            }
+
             $this->conn = new PDO(
                 $dsn,
                 $this->username,
                 $this->password,
-                [
-                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES   => false,
-
-                    // SSL Aiven
-                    PDO::MYSQL_ATTR_SSL_CA => __DIR__ . '/../certs/ca.pem',
-                ]
+                $opcoes
             );
 
         } catch (PDOException $e) {
