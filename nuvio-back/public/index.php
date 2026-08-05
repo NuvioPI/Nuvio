@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/env.php';
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-$origemPermitida = env('CORS_ORIGIN', 'http://localhost:3000');
+$origemPermitida = env('CORS_ORIGIN', 'https://nuvio-fawn.vercel.app');
 $origemRequisicao = $_SERVER['HTTP_ORIGIN'] ?? '';
 
 if ($origemRequisicao === $origemPermitida) {
