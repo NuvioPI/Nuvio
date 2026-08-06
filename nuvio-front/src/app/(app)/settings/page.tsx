@@ -1,23 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useTheme } from "next-themes";
-import {
-  Bell,
-  Check,
-  ChevronRight,
-  KeyRound,
-  Laptop,
-  LockKeyhole,
-  Mail,
-  Monitor,
-  Moon,
-  ShieldCheck,
-  Sun,
-  UserRound,
-} from "lucide-react";
+
+type IconComponent = React.ComponentType<{ className?: string }>;
 
 type SettingsSection = "perfil" | "notificacoes" | "seguranca" | "aparencia";
+
+const Bell: IconComponent = ({ className }) => <span className={className} aria-hidden="true">🔔</span>;
+const Check: IconComponent = ({ className }) => <span className={className} aria-hidden="true">✔</span>;
+const ChevronRight: IconComponent = ({ className }) => <span className={className} aria-hidden="true">›</span>;
+const KeyRound: IconComponent = ({ className }) => <span className={className} aria-hidden="true">🔑</span>;
+const Laptop: IconComponent = ({ className }) => <span className={className} aria-hidden="true">💻</span>;
+const LockKeyhole: IconComponent = ({ className }) => <span className={className} aria-hidden="true">🔒</span>;
+const Mail: IconComponent = ({ className }) => <span className={className} aria-hidden="true">✉️</span>;
+const Monitor: IconComponent = ({ className }) => <span className={className} aria-hidden="true">🖥️</span>;
+const Moon: IconComponent = ({ className }) => <span className={className} aria-hidden="true">🌙</span>;
+const ShieldCheck: IconComponent = ({ className }) => <span className={className} aria-hidden="true">🛡️</span>;
+const Sun: IconComponent = ({ className }) => <span className={className} aria-hidden="true">☀️</span>;
+const UserRound: IconComponent = ({ className }) => <span className={className} aria-hidden="true">👤</span>;
 
 const sections = [
   { id: "perfil" as const, label: "Perfil", icon: UserRound },
