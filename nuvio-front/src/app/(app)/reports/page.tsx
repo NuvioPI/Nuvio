@@ -15,8 +15,8 @@ import {
 import { apiFetch } from "@/lib/api";
 import type { TicketResumo } from "@/components/dashboard/ui/table";
 
-const statusOrdem = ["Aberto", "Em atendimento", "Resolvido", "Fechado"];
-const prioridadeOrdem = ["Alta", "Media", "Baixa"];
+const statusOrdem = ["Aberto", "Em atendimento", "Resolvido", "Fechado"] as const;
+const prioridadeOrdem = ["Alta", "Media", "Baixa"] as const;
 
 const statusClasses: Record<string, string> = {
   Aberto: "bg-[var(--status-open-bg)] text-[var(--status-open-text)]",
