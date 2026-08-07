@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  turbopack: {
+    root: __dirname,
+  },
   allowedDevOrigins: [
     "192.168.0.203",
     "26.254.181.244"
