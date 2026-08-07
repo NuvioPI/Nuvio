@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { Header } from "@/components/header/Header";
 
@@ -11,6 +13,7 @@ export default function DashboardLayout({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   const sidebarWidth = collapsed ? "w-16" : "w-64";
 
@@ -51,9 +54,18 @@ export default function DashboardLayout({
 
         {/* MAIN */}
         <main className="flex-1 overflow-y-auto">
-          <div className="p-6">
-            {children}
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.24, ease: "easeOut" }}
+              className="p-6"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
 
       </div>
