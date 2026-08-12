@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "motion/react";
+import { usePathname } from "next/navigation";
 
 import { AnimateIcon } from "@/components/animate-ui/icons/icon";
 import { PanelLeftClose } from "@/components/animate-ui/icons/panel-left-close";
@@ -30,6 +32,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle, onMobileClose }: SidebarProps) {
+  const pathname = usePathname();
+
   return (
     <aside className="w-full bg-(--sidebar) border-r border-(--sidebar-border) flex flex-col h-full">
       {/* LOGO */}
@@ -54,27 +58,46 @@ export function Sidebar({ collapsed, onToggle, onMobileClose }: SidebarProps) {
       {/* NAV */}
       <nav className="flex-1 px-2">
         <div className="flex flex-col gap-1">
-          {navItems.map(({ icon: Icon, label, href }) => (
+          {navItems.map(({ icon: Icon, label, href }, index) => {
+            const ativo = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));
+
+            return (
             <AnimateIcon key={label} animateOnHover>
-              <Link
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.035, duration: 0.2 }}
+              >
+                <Link
                 href={href}
                 title={collapsed ? label : undefined}
                 onClick={onMobileClose}
                 className={`
+                  relative overflow-hidden
                   text-(--sidebar-foreground)
                   flex items-center gap-3 p-3
                   hover:text-(--hovertxt)
                   hover:bg-(--hoverbg)
+                  ${ativo ? "bg-(--hoverbg) text-(--hovertxt)" : ""}
                   ${collapsed ? "justify-center" : ""}
                   rounded-lg transition-all duration-200
       `}
               >
+                {ativo && (
+                  <motion.span
+                    layoutId="sidebar-active-item"
+                    className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-(--primary)"
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  />
+                )}
                 <Icon className="shrink-0 w-5 h-5" />
 
                 {!collapsed && <span className="truncate">{label}</span>}
               </Link>
+              </motion.div>
             </AnimateIcon>
-          ))}
+          );
+          })}
         </div>
       </nav>
 

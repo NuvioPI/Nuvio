@@ -7,7 +7,12 @@ const nextConfig: NextConfig = {
     "26.254.181.244"
   ],
   images: {
-    domains: ["i.pravatar.cc"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "i.pravatar.cc",
+      },
+    ],
   },
 };
 

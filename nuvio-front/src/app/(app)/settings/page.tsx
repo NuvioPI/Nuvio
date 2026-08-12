@@ -1,281 +1,149 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useTheme } from "next-themes";
-import { SearchBar } from "@/components/header/ui/searchBar";
-import { Bell } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
 
-// --- COMPONENTES AUXILIARES ---
+type IconComponent = React.ComponentType<{ className?: string }>;
 
-const Switch = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
-  <div
-    onClick={onChange}
-    className={`w-10 h-[22px] rounded-full relative cursor-pointer transition-all duration-300 ${
-      checked ? "bg-(--primary) opacity-100" : "bg-(--muted-foreground) opacity-60"
-    }`}
-  >
-    <div
-      className={`absolute w-4 h-4 bg-white rounded-full top-[3px] transition-all duration-300 shadow-[0_2px_4px_rgba(0,0,0,0.2)] ${
-        checked ? "left-[21px]" : "left-[3px]"
-      }`}
-    />
-  </div>
-);
+type SettingsSection = "perfil" | "notificacoes" | "seguranca" | "aparencia";
 
-const FormRow = ({
-  label,
-  description,
-  children,
-  noBorder = false,
-}: {
-  label: string;
-  description: string;
-  children: React.ReactNode;
-  noBorder?: boolean;
-}) => (
-  <div
-    className={`grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-5 py-4 items-center ${
-      noBorder ? "" : "border-b border-(--muted)"
-    }`}
-  >
-    <div>
-      <label className="block text-sm font-semibold text-(--card-foreground) mb-1">
-        {label}
-      </label>
-      <span className="text-xs text-(--muted-foreground) leading-relaxed block">
-        {description}
-      </span>
-    </div>
-    <div className="w-full">{children}</div>
-  </div>
-);
+const Bell: IconComponent = ({ className }) => <span className={className} aria-hidden="true">🔔</span>;
+const Check: IconComponent = ({ className }) => <span className={className} aria-hidden="true">✔</span>;
+const ChevronRight: IconComponent = ({ className }) => <span className={className} aria-hidden="true">›</span>;
+const KeyRound: IconComponent = ({ className }) => <span className={className} aria-hidden="true">🔑</span>;
+const Laptop: IconComponent = ({ className }) => <span className={className} aria-hidden="true">💻</span>;
+const LockKeyhole: IconComponent = ({ className }) => <span className={className} aria-hidden="true">🔒</span>;
+const Mail: IconComponent = ({ className }) => <span className={className} aria-hidden="true">✉️</span>;
+const Monitor: IconComponent = ({ className }) => <span className={className} aria-hidden="true">🖥️</span>;
+const Moon: IconComponent = ({ className }) => <span className={className} aria-hidden="true">🌙</span>;
+const ShieldCheck: IconComponent = ({ className }) => <span className={className} aria-hidden="true">🛡️</span>;
+const Sun: IconComponent = ({ className }) => <span className={className} aria-hidden="true">☀️</span>;
+const UserRound: IconComponent = ({ className }) => <span className={className} aria-hidden="true">👤</span>;
 
-const inputClasses =
-  "w-full px-3.5 py-2.5 rounded-lg border border-(--border) bg-(--background) text-(--foreground) text-sm outline-none focus:border-(--ring) transition-colors";
-
-const TABS = [
-  // Itens de navegação de administrador foram removidos para focar na visão do usuário.
-  { id: "perfil", icon: "", label: "Perfil" },
-  { id: "notificacoes", icon: "", label: "Notificações" },
-  { id: "seguranca", icon: "", label: "Segurança" },
+const sections = [
+  { id: "perfil" as const, label: "Perfil", icon: UserRound },
+  { id: "notificacoes" as const, label: "Notificações", icon: Bell },
+  { id: "seguranca" as const, label: "Segurança", icon: ShieldCheck },
+  { id: "aparencia" as const, label: "Aparência", icon: Monitor },
 ];
 
+function Toggle({ enabled, onChange, label }: { enabled: boolean; onChange: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={label}
+      onClick={onChange}
+      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${enabled ? "bg-(--primary)" : "bg-(--border)"}`}
+    >
+      <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} />
+    </button>
+  );
+}
+
+function Field({ label, hint, children }: { label: string; hint: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-3 py-5 md:grid-cols-[minmax(180px,0.8fr)_minmax(260px,1.2fr)] md:gap-8">
+      <div>
+        <p className="text-sm font-medium text-(--foreground)">{label}</p>
+        <p className="mt-1 text-xs leading-5 text-(--muted-foreground)">{hint}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Card({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-(--card-border) bg-(--card) shadow-(--shadow)">
+      <div className="border-b border-(--border) px-5 py-5 sm:px-6">
+        <h2 className="font-semibold text-(--card-foreground)">{title}</h2>
+        <p className="mt-1 text-sm text-(--muted-foreground)">{description}</p>
+      </div>
+      <div className="px-5 sm:px-6">{children}</div>
+    </section>
+  );
+}
+
+const inputClass = "w-full rounded-xl border border-(--border) bg-(--background) px-3.5 py-2.5 text-sm text-(--foreground) outline-none transition focus:border-(--ring) focus:ring-2 focus:ring-(--ring)/20";
+
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("perfil"); // A aba 'perfil' agora é a inicial.
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const [active, setActive] = useState<SettingsSection>("perfil");
+  const [saved, setSaved] = useState(false);
+  const [preferences, setPreferences] = useState({ email: true, desktop: true, updates: false, twoFactor: false, compact: false });
 
-  // Estados dos formulários/toggles
-  const [isEditingPassword, setIsEditingPassword] = useState(false);
-  const [twoFactor, setTwoFactor] = useState(false);
-  const [compactMode, setCompactMode] = useState(false);
-  const [showTips, setShowTips] = useState(true);
-  const [animations, setAnimations] = useState(true);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const save = () => {
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 2500);
+  };
+  const flip = (key: keyof typeof preferences) => setPreferences((current) => ({ ...current, [key]: !current[key] }));
 
   return (
-    <div className="min-h-screen p-4 md:p-8 lg:p-10 bg-(--background) text-(--foreground) overflow-y-auto">
-      
-      {/* --- CABEÇALHO --- */}
-      <header className="flex flex-col md:flex-row md:justify-between md:items-start mb-8 gap-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-1">Configurações</h1>
-          <p className="text-(--muted-foreground) text-sm">
-            Gerencie as configurações do sistema e personalize sua experiência.
-          </p>
-        </div>
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="flex-1 md:w-72">
-            <SearchBar />
-          </div>
-          <button className="w-10 h-10 shrink-0 rounded-full border border-(--border) flex items-center justify-center bg-(--card) relative hover:bg-(--hoverbg) transition-colors cursor-pointer">
-            <Bell className="w-5 h-5 text-(--foreground)" />
-            <div className="absolute top-2 right-2.5 w-2 h-2 bg-(--ring) rounded-full"></div>
-          </button>
-        </div>
-      </header>
+    <div className="mx-auto w-full max-w-7xl px-1 py-2 sm:px-2 sm:py-5">
+      <div className="mb-8">
+        <p className="text-sm font-medium text-(--primary)">Sua conta</p>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-(--foreground)">Configurações</h1>
+        <p className="mt-2 text-sm text-(--muted-foreground)">Personalize sua experiência e mantenha sua conta protegida.</p>
+      </div>
 
-      {/* --- CONTEÚDO PRINCIPAL (3 COLUNAS) --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] xl:grid-cols-[220px_1fr_340px] gap-8 items-start">
-        
-        {/* NAVEGAÇÃO LATERAL ESQUERDA */}
-        <nav className="flex flex-col gap-1" aria-label="Navegação das configurações">
-          {TABS.map((tab) => (
+      <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <nav className="flex gap-1 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible" aria-label="Seções das configurações">
+          {sections.map(({ id, label, icon: Icon }) => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`relative flex items-center px-4 py-2.5 text-sm rounded-lg transition-colors text-left w-full cursor-pointer ${
-                activeTab === tab.id
-                  ? "text-(--primary) font-semibold"
-                  : "text-(--muted-foreground) hover:bg-(--muted) font-medium"
-              }`}
+              key={id}
+              type="button"
+              onClick={() => setActive(id)}
+              className={`flex shrink-0 items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm transition ${active === id ? "bg-(--primary) text-(--primary-foreground) shadow-sm" : "text-(--muted-foreground) hover:bg-(--hoverbg) hover:text-(--foreground)"}`}
             >
-              {activeTab === tab.id && (
-                <motion.div
-                  layoutId="active-tab-indicator"
-                  className="absolute inset-0 bg-(--hoverbg) rounded-lg"
-                  transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
-                />
-              )}
-              <div className="relative z-10 flex items-center gap-3">
-                <span>{tab.icon}</span> {tab.label}
-              </div>
+              <Icon className="h-4 w-4" />
+              {label}
             </button>
           ))}
         </nav>
 
-        {/* ÁREA CENTRAL DE CONTEÚDO */}
-        <main>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-            >
-              {/* ABA PERFIL */}
-              {activeTab === "perfil" && (
-                <>
-                  <div className="bg-(--card) border border-(--card-border) rounded-(--radius) p-6 shadow-(--shadow) mb-6">
-                    <h2 className="text-base font-semibold mb-1">Perfil</h2>
-                    <p className="text-(--muted-foreground) text-[13px] mb-6">
-                      Gerencie suas informações pessoais e credenciais.
-                    </p>
+        <div className="space-y-5">
+          {active === "perfil" && <>
+            <Card title="Informações do perfil" description="Estes dados aparecem na identificação dos seus chamados.">
+              <Field label="Nome completo" hint="Use o nome pelo qual você é reconhecido na equipe."><input className={inputClass} defaultValue="Lucas Oliveira" /></Field>
+              <div className="border-t border-(--border)"><Field label="E-mail profissional" hint="Usado para acessar a plataforma e receber alertas."><input className={inputClass} type="email" defaultValue="lucas@exemplo.com" /></Field></div>
+              <div className="flex items-center justify-end border-t border-(--border) py-4"><button onClick={save} className="inline-flex items-center gap-2 rounded-xl bg-(--primary) px-4 py-2.5 text-sm font-medium text-(--primary-foreground) transition hover:bg-(--primary-hover)">{saved ? <Check className="h-4 w-4" /> : null}{saved ? "Alterações salvas" : "Salvar alterações"}</button></div>
+            </Card>
+            <Card title="Senha" description="Use uma senha longa e exclusiva para proteger sua conta.">
+              <Field label="Senha atual" hint="Atualize sua senha periodicamente."><button className="inline-flex items-center gap-2 rounded-xl border border-(--border) px-4 py-2.5 text-sm font-medium transition hover:bg-(--muted)"><KeyRound className="h-4 w-4" />Alterar senha <ChevronRight className="h-4 w-4" /></button></Field>
+            </Card>
+          </>}
 
-                    <FormRow label="Nome Completo" description="Como você será identificado na plataforma.">
-                      <input type="text" defaultValue="Lucas Oliveira" className={inputClasses} />
-                    </FormRow>
+          {active === "notificacoes" && <Card title="Preferências de notificação" description="Defina quais avisos você deseja receber.">
+            <PreferenceRow icon={Mail} title="E-mails sobre chamados" text="Receba atualizações quando houver movimentação nos seus chamados." enabled={preferences.email} onChange={() => flip("email")} />
+            <PreferenceRow icon={Bell} title="Notificações no sistema" text="Exiba avisos importantes diretamente na plataforma." enabled={preferences.desktop} onChange={() => flip("desktop")} />
+            <PreferenceRow icon={ShieldCheck} title="Novidades da plataforma" text="Fique por dentro de novos recursos e melhorias." enabled={preferences.updates} onChange={() => flip("updates")} last />
+          </Card>}
 
-                    <FormRow label="E-mail Profissional" description="E-mail utilizado para login e alertas.">
-                      <input type="email" defaultValue="lucas@exemplo.com" className={inputClasses} />
-                    </FormRow>
+          {active === "seguranca" && <>
+            <Card title="Proteção da conta" description="Adicione uma camada extra de segurança ao seu acesso.">
+              <PreferenceRow icon={LockKeyhole} title="Autenticação em dois fatores" text="Exige um código de confirmação ao entrar na sua conta." enabled={preferences.twoFactor} onChange={() => flip("twoFactor")} last />
+            </Card>
+            <Card title="Sessões ativas" description="Dispositivos que acessaram sua conta recentemente.">
+              <div className="flex items-center justify-between gap-4 py-5"><div className="flex items-center gap-3"><span className="rounded-xl bg-(--hoverbg) p-2.5 text-(--primary)"><Laptop className="h-5 w-5" /></span><div><p className="text-sm font-medium">Este dispositivo</p><p className="mt-0.5 text-xs text-(--muted-foreground)">Windows · São Paulo, Brasil · Agora</p></div></div><span className="rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-700 dark:text-green-400">Atual</span></div>
+            </Card>
+          </>}
 
-                    <FormRow label={isEditingPassword ? "Nova Senha" : "Senha de Acesso"} description={isEditingPassword ? "Digite uma senha forte com no mínimo 8 caracteres." : "Gerencie a senha usada para acessar o sistema."} noBorder>
-                      {isEditingPassword ? (
-                        <input autoFocus type="password" placeholder="Digite sua nova senha" className={inputClasses} />
-                      ) : (
-                        <div className="flex items-center justify-between bg-(--muted) px-3 py-2 rounded-lg border border-(--border)">
-                          <span className="font-mono tracking-widest">••••••••</span>
-                          <button
-                            onClick={() => setIsEditingPassword(true)}
-                            className="bg-(--card) border border-(--border) text-(--foreground) px-3 py-1.5 rounded-md font-semibold cursor-pointer text-xs transition-colors hover:bg-(--muted)"
-                          >
-                            Editar
-                          </button>
-                        </div>
-                      )}
-                    </FormRow>
-
-                    <div className="flex justify-end mt-6 pt-6 border-t border-(--muted)">
-                      <button className="bg-(--primary) text-(--primary-foreground) px-5 py-2.5 rounded-lg font-semibold cursor-pointer text-sm transition-colors hover:bg-(--primary-hover)">
-                        {isEditingPassword ? "💾 Atualizar dados" : "💾 Atualizar perfil"}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Propriedade da conta */}
-                  <div className="bg-(--card) border border-red-500/40 rounded-(--radius) p-6 shadow-(--shadow) mb-6">
-                    <h3 className="text-base font-semibold text-red-500 mb-2">Propriedade da conta</h3>
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold mb-0.5 text-(--card-foreground)">Excluir sua conta</label>
-                        <span className="text-xs text-(--muted-foreground)">Esta ação é irreversível. Todos os seus dados, tickets e informações serão permanentemente removidos.</span>
-                      </div>
-                      <button className="bg-red-600/90 text-white px-4 py-2 rounded-md font-semibold cursor-pointer text-[13px] transition-colors hover:bg-red-700 whitespace-nowrap">
-                        Excluir conta
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* ABA NOTIFICAÇÕES (Placeholder) */}
-              {activeTab === "notificacoes" && (
-                <div className="bg-(--card) border border-(--card-border) rounded-(--radius) p-6 shadow-(--shadow) mb-6">
-                  <h2 className="text-base font-semibold mb-1">Notificações</h2>
-                  <p className="text-(--muted-foreground) text-[13px] mb-6">
-                    Escolha como e quando você deseja ser notificado.
-                  </p>
-                  {/* Conteúdo do formulário de notificações virá aqui */}
-                  <div className="text-center py-10 text-(--muted-foreground)">
-                    <p>Configurações de notificação em breve.</p>
-                  </div>
-                </div>
-              )}
-
-              {/* ABA SEGURANÇA */}
-              {activeTab === "seguranca" && (
-                <div className="bg-(--card) border border-(--card-border) rounded-(--radius) p-6 shadow-(--shadow) mb-6">
-                  <h2 className="text-base font-semibold mb-1">Segurança</h2>
-                  <p className="text-(--muted-foreground) text-[13px] mb-6">Proteja sua conta e gerencie onde você está conectado.</p>
-
-                  <h3 className="text-sm font-semibold text-(--card-foreground) border-b border-(--muted) pb-2 mb-4">Autenticação</h3>
-                  <div className="flex justify-between items-center py-2 mb-4">
-                    <div>
-                      <label className="block text-sm font-semibold mb-0.5">Autenticação de Dois Fatores (2FA)</label>
-                      <span className="text-xs text-(--muted-foreground)">Exige um código extra gerado no seu celular ao fazer login.</span>
-                    </div>
-                    <Switch checked={twoFactor} onChange={() => setTwoFactor(!twoFactor)} />
-                  </div>
-
-                  <h3 className="text-sm font-semibold text-(--card-foreground) border-b border-(--muted) pb-2 mt-8 mb-4">Check-up de Segurança</h3>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold mb-0.5">Sessões Ativas</label>
-                      <span className="text-xs text-(--muted-foreground)">Verifique os dispositivos que têm acesso à sua conta.</span>
-                    </div>
-                    <button className="bg-transparent border border-(--border) text-(--foreground) px-4 py-2 rounded-md font-semibold cursor-pointer text-[13px] transition-colors hover:bg-(--muted)">
-                      Revisar Dispositivos
-                    </button>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </main>
-
-        {/* SIDEBAR DIREITA (WIDGETS) */}
-        <aside className="flex flex-col gap-6 lg:col-span-2 xl:col-span-1">
-          {/* TEMA */}
-          <div className="bg-(--card) border border-(--card-border) rounded-(--radius) p-6 shadow-(--shadow)">
-            <h2 className="text-base font-semibold mb-1">Aparência</h2>
-            <p className="text-(--muted-foreground) text-[13px] mb-4">Escolha o tema de aparência do sistema.</p>
-            
-            {mounted && (
-              <div className="grid grid-cols-2 gap-4">
-                <div onClick={() => setTheme("light")} className={`border rounded-lg p-3 cursor-pointer flex flex-col gap-3 transition-colors ${theme !== "dark" ? "border-(--ring) bg-(--hoverbg) border-2" : "border-(--border)"}`}>
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${theme !== "dark" ? "border-(--ring)" : "border-(--border)"}`}>{theme !== "dark" && <div className="w-2 h-2 bg-(--ring) rounded-full" />}</div> Claro
-                  </div>
-                  <div className="h-[60px] bg-[#fdfdfd] border-t-8 border-[#e0e0e0] rounded border border-gray-200" />
-                </div>
-                <div onClick={() => setTheme("dark")} className={`border rounded-lg p-3 cursor-pointer flex flex-col gap-3 transition-colors ${theme === "dark" ? "border-(--ring) bg-(--hoverbg) border-2" : "border-(--border)"}`}>
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${theme === "dark" ? "border-(--ring)" : "border-(--border)"}`}>{theme === "dark" && <div className="w-2 h-2 bg-(--ring) rounded-full" />}</div> Escuro
-                  </div>
-                  <div className="h-[60px] bg-[#1e1e1e] border-t-8 border-[#333] rounded border border-gray-800" />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* OUTRAS OPÇÕES */}
-          <div className="bg-(--card) border border-(--card-border) rounded-(--radius) p-6 shadow-(--shadow)">
-            <h2 className="text-base font-semibold mb-4">Outras opções</h2>
-            <div className="flex flex-col gap-5">
-              <div className="flex justify-between items-center"><div className="pr-4"><label className="block text-sm font-semibold mb-0.5">Modo compacto</label><span className="text-xs text-(--muted-foreground)">Reduz o espaçamento entre elementos.</span></div><Switch checked={compactMode} onChange={() => setCompactMode(!compactMode)} /></div>
-              <div className="flex justify-between items-center"><div className="pr-4"><label className="block text-sm font-semibold mb-0.5">Exibir dicas</label><span className="text-xs text-(--muted-foreground)">Mostrar dicas e tutoriais para novos usuários.</span></div><Switch checked={showTips} onChange={() => setShowTips(!showTips)} /></div>
-              <div className="flex justify-between items-center"><div className="pr-4"><label className="block text-sm font-semibold mb-0.5">Animações</label><span className="text-xs text-(--muted-foreground)">Habilita animações e transições suaves.</span></div><Switch checked={animations} onChange={() => setAnimations(!animations)} /></div>
-            </div>
-          </div>
-        </aside>
-
+          {active === "aparencia" && <Card title="Aparência" description="Escolha como a plataforma deve ser exibida para você.">
+            <div className="grid gap-3 py-5 sm:grid-cols-2"><ThemeOption label="Claro" icon={Sun} active={theme !== "dark"} onClick={() => setTheme("light")} /><ThemeOption label="Escuro" icon={Moon} active={theme === "dark"} onClick={() => setTheme("dark")} /></div>
+            <div className="border-t border-(--border)"><PreferenceRow icon={Monitor} title="Modo compacto" text="Reduz o espaçamento entre os elementos da interface." enabled={preferences.compact} onChange={() => flip("compact")} last /></div>
+          </Card>}
+        </div>
       </div>
     </div>
   );
+}
+
+function PreferenceRow({ icon: Icon, title, text, enabled, onChange, last = false }: { icon: typeof Bell; title: string; text: string; enabled: boolean; onChange: () => void; last?: boolean }) {
+  return <div className={`flex items-center justify-between gap-4 py-5 ${last ? "" : "border-b border-(--border)"}`}><div className="flex min-w-0 items-center gap-3"><span className="rounded-xl bg-(--hoverbg) p-2.5 text-(--primary)"><Icon className="h-5 w-5" /></span><div><p className="text-sm font-medium">{title}</p><p className="mt-0.5 max-w-lg text-xs leading-5 text-(--muted-foreground)">{text}</p></div></div><Toggle enabled={enabled} onChange={onChange} label={title} /></div>;
+}
+
+function ThemeOption({ label, icon: Icon, active, onClick }: { label: string; icon: typeof Sun; active: boolean; onClick: () => void }) {
+  return <button type="button" onClick={onClick} className={`flex items-center gap-3 rounded-xl border p-4 text-left transition ${active ? "border-(--primary) bg-(--hoverbg) ring-1 ring-(--primary)" : "border-(--border) hover:bg-(--muted)"}`}><span className="rounded-lg bg-(--card) p-2 text-(--primary) shadow-sm"><Icon className="h-4 w-4" /></span><span className="text-sm font-medium">{label}</span>{active && <Check className="ml-auto h-4 w-4 text-(--primary)" />}</button>;
 }
