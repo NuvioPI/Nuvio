@@ -34,6 +34,7 @@ require_once __DIR__ . '/../controllers/AdministradorController.php';
 require_once __DIR__ . '/../controllers/AnexoController.php';
 require_once __DIR__ . '/../controllers/AvaliacaoTicketController.php';
 require_once __DIR__ . '/../controllers/TipoUsuarioController.php';
+require_once __DIR__ . '/../controllers/NotificacaoController.php';
 
 // Captura método e URI
 $method = $_SERVER['REQUEST_METHOD'];
@@ -87,8 +88,8 @@ if ($uri === '/auth/login' && $method === 'POST') {
 }
 
 if ($uri === '/auth/verificar' && $method === 'GET') {
-    $usuarioAutenticado = autenticar();
-    echo json_encode(['usuario' => $usuarioAutenticado]);
+    $controller = new AuthController();
+    $controller->me();
     exit();
 }
 
@@ -319,6 +320,18 @@ if ($recurso === 'tipos-usuario') {
     elseif ($method === 'PUT' && $id)   $controller->update($id);
     elseif ($method === 'DELETE' && $id) $controller->destroy($id);
     else { http_response_code(405); echo json_encode(['erro' => 'Método não permitido.']); }
+    exit();
+}
+
+// --- Notificações ---
+if ($recurso === 'notificacoes') {
+    $controller = new NotificacaoController();
+    if ($method === 'GET' && !$id) {
+        $controller->index();
+    } else {
+        http_response_code(405);
+        echo json_encode(['erro' => 'Método não permitido.']);
+    }
     exit();
 }
 

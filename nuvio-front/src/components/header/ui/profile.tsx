@@ -4,13 +4,32 @@ import Link from "next/link";
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { apiFetch, API_URL } from "@/lib/api";
 
 export function Profile() {
     const [open, setOpen] = useState(false);
+    const [nome, setNome] = useState<string | null>(null);
+    const [foto, setFoto] = useState<string | null>(null);
 
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        (async () => {
+            try {
+                const dados = await apiFetch<any>("/auth/verificar", { method: "GET" });
+                const u = dados;
+                // `me()` retorna objeto do usuário diretamente
+                setNome(u.nome || null);
+                const fotoVal = u.fotoPerfil || u.fotoperfil || null;
+                if (fotoVal) {
+                    // prefixa URL quando necessário
+                    if (fotoVal.startsWith('http')) setFoto(fotoVal);
+                    else setFoto(`${API_URL}${fotoVal.startsWith('/') ? '' : '/'}${fotoVal}`);
+                }
+            } catch (err) {
+                // ignora
+            }
+        })();
         function handleClickOutside(event: MouseEvent) {
             if (
                 dropdownRef.current &&
@@ -72,7 +91,7 @@ export function Profile() {
                     duration-300
                     ease-in-out
                 "
-                    src="/balls.jpeg"
+                    src={foto ?? "/balls.jpeg"}
                     alt="Foto de Perfil"
                     width={40}
                     height={40}
@@ -97,6 +116,10 @@ export function Profile() {
                         z-50
                     "
                 >
+                    <div className="block w-full p-2">
+                        {nome ? <div className="font-semibold">{nome}</div> : null}
+                    </div>
+
                     <Link href="/perfil" className="dropdown-item block w-full">
                         Meu Perfil
                     </Link>

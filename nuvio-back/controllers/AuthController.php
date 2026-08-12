@@ -115,6 +115,9 @@ class AuthController
                 'email' => $usuario['email'],
                 'cargo' => $usuario['cargo'],
                 'setor' => $usuario['setor'],
+                'telefone' => $usuario['telefone'] ?? null,
+                'fotoPerfil' => $usuario['fotoPerfil'] ?? $usuario['fotoperfil'] ?? null,
+                'dataCadastro' => $usuario['dataCadastro'] ?? $usuario['datacadastro'] ?? null,
             ]);
             return;
         }

@@ -10,6 +10,9 @@ class Usuario
     public $senhaHash;
     public $cargo;
     public $setor;
+    public $telefone;
+    public $fotoPerfil;
+    public $dataCadastro;
 
     public function __construct($db)
     {
@@ -147,5 +150,8 @@ class Usuario
         $this->senhaHash = $row['senhaHash'] ?? $row['senhahash'] ?? null;
         $this->cargo = $row['cargo'] ?? null;
         $this->setor = $row['setor'] ?? null;
+        $this->telefone = $row['telefone'] ?? null;
+        $this->fotoPerfil = $row['fotoPerfil'] ?? $row['fotoperfil'] ?? null;
+        $this->dataCadastro = $row['dataCadastro'] ?? $row['datacadastro'] ?? null;
     }
 }
