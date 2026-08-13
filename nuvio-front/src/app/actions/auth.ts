@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { API_URL } from "@/lib/api";
 
 export async function loginAction(formData: FormData) {
   const email = formData.get("email") as string;
@@ -12,10 +13,7 @@ export async function loginAction(formData: FormData) {
     return { error: "Email e senha são obrigatórios" };
   }
 
-  try {
-    // Configura a URL base da sua API PHP (ajuste no .env se necessário, ex: php -S localhost:8000)
-    const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost/nuvio-back/routes/api.php").replace(/\/$/, "");
-    
+    try {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: {
