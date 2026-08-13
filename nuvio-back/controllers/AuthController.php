@@ -137,15 +137,18 @@ class AuthController
         $usuario = $this->usuario->buscarPorId($auth['idUsuario']);
         if ($usuario) {
             echo json_encode([
-                'id' => $usuario['idusuario'] ?? $usuario['idUsuario'],
-                'idtipoUsuario' => $usuario['idtipousuario'] ?? $usuario['idtipoUsuario'],
-                'nome' => $usuario['nome'],
-                'email' => $usuario['email'],
-                'cargo' => $usuario['cargo'],
-                'setor' => $usuario['setor'],
-                'telefone' => $usuario['telefone'] ?? null,
-                'fotoPerfil' => $usuario['fotoPerfil'] ?? $usuario['fotoperfil'] ?? null,
-                'dataCadastro' => $usuario['dataCadastro'] ?? $usuario['datacadastro'] ?? null,
+                'usuario' => [
+                    'id' => $usuario['idusuario'] ?? $usuario['idUsuario'],
+                    'idtipoUsuario' => $usuario['idtipousuario'] ?? $usuario['idtipoUsuario'],
+                    'nome' => $usuario['nome'],
+                    'email' => $usuario['email'],
+                    'cargo' => $usuario['cargo'],
+                    'setor' => $usuario['setor'],
+                    'telefone' => $usuario['telefone'] ?? null,
+                    'fotoPerfil' => $usuario['fotoPerfil'] ?? $usuario['fotoperfil'] ?? null,
+                    'dataCadastro' => $usuario['dataCadastro'] ?? $usuario['datacadastro'] ?? null,
+                    'tipo' => $auth['tipo'] ?? null,
+                ],
             ]);
             return;
         }
