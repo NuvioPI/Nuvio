@@ -39,6 +39,11 @@ class JWT
     public static function validar($token)
     {
         self::init();
+
+        if (!is_string($token) || trim($token) === '') {
+            return false;
+        }
+
         $partes = explode('.', $token);
 
         if (count($partes) !== 3) {
@@ -46,6 +51,10 @@ class JWT
         }
 
         [$header, $payload, $assinaturaRecebida] = $partes;
+
+        if ($header === '' || $payload === '' || $assinaturaRecebida === '') {
+            return false;
+        }
 
         $assinaturaEsperada = self::base64url(hash_hmac(
             'sha256',
@@ -60,7 +69,11 @@ class JWT
 
         $dados = json_decode(self::base64urlDecode($payload), true);
 
-        if (!$dados || $dados['exp'] < time()) {
+        if (!is_array($dados) || !isset($dados['exp']) || !is_numeric($dados['exp'])) {
+            return false;
+        }
+
+        if ((int) $dados['exp'] < time()) {
             return false;
         }
 

@@ -19,19 +19,32 @@ class AuthController
     public function login()
     {
         $body = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($body)) {
+            $body = [];
+        }
+
+        $body['email'] = isset($body['email']) ? trim((string) $body['email']) : '';
+        $body['senha'] = isset($body['senha']) ? (string) $body['senha'] : '';
 
         // Logging básico para depuração de login (não grava senhas)
         $logDir = __DIR__ . '/../logs';
         if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
         $logFile = $logDir . '/auth.log';
         $ip = $_SERVER['REMOTE_ADDR'] ?? '??';
-        $emailLog = is_array($body) && isset($body['email']) ? $body['email'] : 'desconhecido';
+        $emailLog = $body['email'] !== '' ? $body['email'] : 'desconhecido';
         file_put_contents($logFile, date('Y-m-d H:i:s') . " | LOGIN ATTEMPT | IP={$ip} | email={$emailLog}\n", FILE_APPEND);
 
-        if (empty($body['email']) || empty($body['senha'])) {
+        if ($body['email'] === '' || $body['senha'] === '') {
             http_response_code(400);
             file_put_contents($logFile, date('Y-m-d H:i:s') . " | LOGIN FAILED | missing credentials | IP={$ip} | email={$emailLog}\n", FILE_APPEND);
             echo json_encode(['erro' => 'Email e senha são obrigatórios.']);
+            return;
+        }
+
+        if (!filter_var($body['email'], FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " | LOGIN FAILED | invalid email format | IP={$ip} | email={$emailLog}\n", FILE_APPEND);
+            echo json_encode(['erro' => 'Formato de email inválido.']);
             return;
         }
 
@@ -101,10 +114,23 @@ class AuthController
     public function registro()
     {
         $body = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($body)) {
+            $body = [];
+        }
 
-        if (empty($body['nome']) || empty($body['email']) || empty($body['senha'])) {
+        $body['nome'] = isset($body['nome']) ? trim((string) $body['nome']) : '';
+        $body['email'] = isset($body['email']) ? trim((string) $body['email']) : '';
+        $body['senha'] = isset($body['senha']) ? (string) $body['senha'] : '';
+
+        if ($body['nome'] === '' || $body['email'] === '' || $body['senha'] === '') {
             http_response_code(400);
             echo json_encode(['erro' => 'Nome, email e senha são obrigatórios.']);
+            return;
+        }
+
+        if (!filter_var($body['email'], FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'Formato de email inválido.']);
             return;
         }
 
@@ -118,8 +144,8 @@ class AuthController
         $this->usuario->nome = htmlspecialchars(strip_tags($body['nome']));
         $this->usuario->email = htmlspecialchars(strip_tags($body['email']));
         $this->usuario->senhaHash = password_hash($body['senha'], PASSWORD_BCRYPT);
-        $this->usuario->cargo = htmlspecialchars(strip_tags($body['cargo'] ?? ''));
-        $this->usuario->setor = htmlspecialchars(strip_tags($body['setor'] ?? ''));
+        $this->usuario->cargo = htmlspecialchars(strip_tags((string) ($body['cargo'] ?? '')));
+        $this->usuario->setor = htmlspecialchars(strip_tags((string) ($body['setor'] ?? '')));
 
         if ($this->usuario->criar()) {
             http_response_code(201);

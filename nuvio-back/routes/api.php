@@ -62,7 +62,7 @@ if ($uri === '/auth/login' && $method === 'POST') {
     $rateLimiter = new RateLimiter();
     $clientIP = $_SERVER['REMOTE_ADDR'];
     $chaveRateLimit = "login_" . $clientIP;
-    
+
     if (!$rateLimiter->permite($chaveRateLimit, 10, 900)) {
         http_response_code(429); // Too Many Requests
         echo json_encode([
@@ -71,10 +71,20 @@ if ($uri === '/auth/login' && $method === 'POST') {
         ]);
         exit();
     }
-    
+
     $controller = new AuthController();
     $controller->login();
     exit();
+}
+
+// -------------------------------------------------------
+// Rotas protegidas — requerem token JWT válido
+// -------------------------------------------------------
+$usuarioAutenticado = null;
+$rotasPublicas = ['/auth/registro', '/auth/login'];
+
+if (!in_array($uri, $rotasPublicas, true)) {
+    $usuarioAutenticado = autenticar();
 }
 
 if ($uri === '/auth/verificar' && $method === 'GET') {
@@ -82,11 +92,6 @@ if ($uri === '/auth/verificar' && $method === 'GET') {
     $controller->me();
     exit();
 }
-
-// -------------------------------------------------------
-// Rotas protegidas — requerem token JWT válido
-// -------------------------------------------------------
-$usuarioAutenticado = autenticar();
 
 // Área autenticada do portal do cliente.
 if (preg_match('#^/portal/tickets(?:/(\d+)(?:/mensagens)?)?$#', $uri, $portalMatch)) {

@@ -61,18 +61,29 @@ function obterCabecalhoAuthorization()
  * @param array $rolesPermitidas Roles que podem acessar
  * @return array Dados do usuário autenticado
  */
+function normalizarRole($valor)
+{
+    if (!is_string($valor)) {
+        return '';
+    }
+
+    $valor = iconv('UTF-8', 'ASCII//TRANSLIT', $valor);
+    $valor = strtolower(trim((string) $valor));
+    $valor = preg_replace('/[^a-z0-9]+/', '', $valor);
+
+    return (string) $valor;
+}
+
 function autenticarEAutorizar($rolesPermitidas = [])
 {
     require_once __DIR__ . '/../config/database.php';
-    
+
     $usuarioAutenticado = autenticar();
-    
-    // Se não há restrição de role, apenas autentica
+
     if (empty($rolesPermitidas)) {
         return $usuarioAutenticado;
     }
-    
-    // Buscar role/tipo do usuário no banco
+
     $db = (new DB())->getConnection();
     $query = "
         SELECT tu.descricao as role
@@ -81,12 +92,18 @@ function autenticarEAutorizar($rolesPermitidas = [])
         WHERE u.idUsuario = ?
         LIMIT 1
     ";
-    
+
     $stmt = $db->prepare($query);
     $stmt->execute([$usuarioAutenticado['idUsuario']]);
     $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$usuario || !in_array($usuario['role'], $rolesPermitidas)) {
+
+    $roleAtual = normalizarRole($usuario['role'] ?? '');
+    $rolesPermitidasNormalizadas = array_map(
+        fn($role) => normalizarRole($role),
+        $rolesPermitidas
+    );
+
+    if (!$usuario || !in_array($roleAtual, $rolesPermitidasNormalizadas, true)) {
         http_response_code(403);
         echo json_encode([
             'erro' => 'Acesso negado. Permissão insuficiente.',
@@ -95,6 +112,6 @@ function autenticarEAutorizar($rolesPermitidas = [])
         ]);
         exit();
     }
-    
+
     return $usuarioAutenticado;
 }

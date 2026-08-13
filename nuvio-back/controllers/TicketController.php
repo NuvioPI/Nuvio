@@ -172,6 +172,38 @@ class TicketController extends BaseController
             return;
         }
 
+        if (!$this->existeRegistro('Usuario', 'idUsuario', $body['idUsuario'])) {
+            $this->respond([
+                'erro' => 'Usuário informado não existe.'
+            ], 404);
+
+            return;
+        }
+
+        if (!$this->existeRegistro('Tecnico', 'idTecnico', $body['idTecnico'])) {
+            $this->respond([
+                'erro' => 'Técnico informado não existe.'
+            ], 404);
+
+            return;
+        }
+
+        if (!$this->existeRegistro('Categoria', 'idCategoria', $body['idCategoria'])) {
+            $this->respond([
+                'erro' => 'Categoria informada não existe.'
+            ], 404);
+
+            return;
+        }
+
+        if (!$this->existeRegistro('SLA', 'idSLA', $body['idSLA'])) {
+            $this->respond([
+                'erro' => 'SLA informado não existe.'
+            ], 404);
+
+            return;
+        }
+
         if (!$this->textoValido($body['titulo'])) {
             $this->respond([
                 'erro' => 'O título não pode ficar vazio.'

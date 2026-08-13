@@ -51,6 +51,22 @@ class PortalController extends BaseController
 
         try {
             [$idTecnico, $idCategoria, $idSLA] = $this->configuracaoPadrao();
+
+            if (!$this->existeRegistro('Tecnico', 'idTecnico', $idTecnico)) {
+                $this->respond(['erro' => 'Não há técnico disponível para atendimento.'], 409);
+                return;
+            }
+
+            if (!$this->existeRegistro('Categoria', 'idCategoria', $idCategoria)) {
+                $this->respond(['erro' => 'Categoria padrão não existe mais no sistema.'], 409);
+                return;
+            }
+
+            if (!$this->existeRegistro('SLA', 'idSLA', $idSLA)) {
+                $this->respond(['erro' => 'SLA padrão não existe mais no sistema.'], 409);
+                return;
+            }
+
             $this->db->beginTransaction();
 
             $stmt = $this->db->prepare(
