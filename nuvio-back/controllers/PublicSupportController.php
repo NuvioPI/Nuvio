@@ -36,6 +36,13 @@ class PublicSupportController extends BaseController
                 'INSERT INTO HistoricoTicket (idTicket, idUsuario, acao, campoAlterado, valorNovo) VALUES (?, ?, "Criacao", "statusTicket", "Aberto")'
             );
             $historico->execute([$idTicket, $idUsuario]);
+
+            if (($body['canal'] ?? '') === 'chat') {
+                $resposta = $this->db->prepare(
+                    'INSERT INTO respostaTicket (idUsuario, idTicket, msgTicket, dataResposta) VALUES (?, ?, ?, NOW())'
+                );
+                $resposta->execute([$idUsuario, $idTicket, strip_tags($descricao)]);
+            }
             $this->db->commit();
 
             $this->respond(['mensagem' => 'Chamado aberto com sucesso.', 'idTicket' => $idTicket], 201);

@@ -286,6 +286,7 @@ function Navbar() {
     { label: "Funcionalidades", href: "#features" },
     { label: "Planos", href: "#pricing" },
     { label: "Depoimentos", href: "#testimonials" },
+    { label: "Atendimento", href: "/externo" },
   ];
 
   return (
