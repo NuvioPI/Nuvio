@@ -24,6 +24,7 @@ require_once __DIR__ . '/../controllers/AnexoController.php';
 require_once __DIR__ . '/../controllers/AvaliacaoTicketController.php';
 require_once __DIR__ . '/../controllers/TipoUsuarioController.php';
 require_once __DIR__ . '/../controllers/NotificacaoController.php';
+require_once __DIR__ . '/../controllers/PublicSupportController.php';
 
 // Captura método e URI
 $method = $_SERVER['REQUEST_METHOD'];
@@ -79,6 +80,21 @@ if ($uri === '/auth/login' && $method === 'POST') {
 if ($uri === '/auth/verificar' && $method === 'GET') {
     $controller = new AuthController();
     $controller->me();
+    exit();
+}
+
+// Portal externo: somente abertura de chamado. As demais rotas continuam protegidas.
+if ($uri === '/public/tickets' && $method === 'POST') {
+    $controller = new PublicSupportController();
+    $controller->createTicket();
+    exit();
+}
+
+if (preg_match('#^/public/chats/(\d+)$#', $uri, $coincidencias)) {
+    $controller = new PublicSupportController();
+    if ($method === 'GET') $controller->messages((int) $coincidencias[1]);
+    elseif ($method === 'POST') $controller->sendMessage((int) $coincidencias[1]);
+    else { http_response_code(405); echo json_encode(['erro' => 'Método não permitido.']); }
     exit();
 }
 

@@ -212,3 +212,19 @@ input:-webkit-autofill:focus {
 * {
   scroll-behavior: smooth;
 }
+
+.input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 0.75rem 0.875rem;
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+
+.input:focus {
+  border-color: #2fae5a;
+  box-shadow: 0 0 0 3px rgba(47, 174, 90, 0.14);
+}
