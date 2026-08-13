@@ -44,7 +44,22 @@ class AuthController
         }
 
         $senhaHash = $usuario['senhahash'] ?? $usuario['senhaHash'] ?? null;
-        if (!$senhaHash || !password_verify($body['senha'], $senhaHash)) {
+        $senhaValida = $senhaHash && password_verify($body['senha'], $senhaHash);
+
+        // Registros antigos foram importados com senha em texto puro. Ao
+        // autenticarem corretamente, são migrados de imediato para bcrypt.
+        if (!$senhaValida && $senhaHash && hash_equals($senhaHash, $body['senha'])) {
+            $senhaValida = true;
+            $atualizarSenha = $this->db->prepare(
+                'UPDATE Usuario SET senhaHash = ? WHERE idUsuario = ?'
+            );
+            $atualizarSenha->execute([
+                password_hash($body['senha'], PASSWORD_BCRYPT),
+                (int) ($usuario['idusuario'] ?? $usuario['idUsuario']),
+            ]);
+        }
+
+        if (!$senhaValida) {
             http_response_code(401);
             file_put_contents($logFile, date('Y-m-d H:i:s') . " | LOGIN FAILED | invalid password | IP={$ip} | email={$emailLog}\n", FILE_APPEND);
             echo json_encode(['erro' => 'Credenciais inválidas.']);

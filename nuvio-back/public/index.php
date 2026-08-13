@@ -4,6 +4,8 @@ require_once __DIR__ . '/../config/cors.php';
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+ini_set('display_errors', '0');
+
 aplicarCors();
 header('Content-Type: application/json; charset=UTF-8');
 

@@ -21,7 +21,7 @@ class Usuario
 
     public function buscarPorEmail($email)
     {
-        $stmt = $this->db->prepare("SELECT * FROM usuario WHERE email = ?");
+        $stmt = $this->db->prepare("SELECT * FROM Usuario WHERE email = ?");
         $stmt->execute([$email]);
         $result = $stmt->fetch();
         if ($result) {
@@ -32,7 +32,7 @@ class Usuario
 
     public function buscarPorId($id)
     {
-        $stmt = $this->db->prepare("SELECT * FROM usuario WHERE idusuario = ?");
+        $stmt = $this->db->prepare("SELECT * FROM Usuario WHERE idUsuario = ?");
         $stmt->execute([$id]);
         $result = $stmt->fetch();
         if ($result) {
@@ -44,7 +44,7 @@ class Usuario
     public function criar()
     {
         $stmt = $this->db->prepare(
-            "INSERT INTO usuario (idtipoUsuario, nome, email, senhaHash, cargo, setor)
+            "INSERT INTO Usuario (idtipoUsuario, nome, email, senhaHash, cargo, setor)
              VALUES (?, ?, ?, ?, ?, ?)"
         );
         $result = $stmt->execute([
@@ -136,7 +136,7 @@ class Usuario
 
     public function emailExiste($email)
     {
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM usuario WHERE email = ?");
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM Usuario WHERE email = ?");
         $stmt->execute([$email]);
         return $stmt->fetchColumn() > 0;
     }
