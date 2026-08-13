@@ -124,7 +124,7 @@ export function Profile() {
                         Meu Perfil
                     </Link>
 
-                    <Link href="/portal-cliente" className="dropdown-item block w-full">
+                    <Link href="/portal" className="dropdown-item block w-full">
                         Portal do Cliente
                     </Link>
 

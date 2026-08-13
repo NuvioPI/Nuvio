@@ -22,7 +22,7 @@ interface AuthContextType {
     senha: string,
     opcoes?: { somenteAdministrador?: boolean }
   ) => Promise<{ sucesso: boolean; erro?: string; usuario?: Usuario }>;
-  logout: () => void;
+  logout: (destino?: string) => void;
   carregando: boolean;
 }
 
@@ -101,12 +101,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  function logout() {
+  function logout(destino = '/admin/login') {
     removerCookie('token');
     localStorage.removeItem('usuario');
     setToken(null);
     setUsuario(null);
-    router.push('/admin/login');
+    router.push(destino);
   }
 
   return (

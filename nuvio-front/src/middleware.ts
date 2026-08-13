@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PROTECTED_PATHS = ["/admin", "/dashboard", "/tickets", "/users", "/reports", "/settings"];
+const PROTECTED_PATHS = ["/admin", "/dashboard", "/tickets", "/users", "/reports", "/settings", "/portal/chamados"];
 const PUBLIC_ADMIN_PATHS = ["/admin/login"];
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
   const isLoginPage = pathname === "/login";
   if (!isProtected && !isLoginPage) return NextResponse.next();
 
-  const loginPath = pathname.startsWith("/admin") ? "/admin/login" : "/login";
+  const loginPath = pathname.startsWith("/admin") ? "/admin/login" : pathname.startsWith("/portal") ? "/portal/login" : "/login";
 
   const token = request.cookies.get("token")?.value;
 
@@ -66,5 +66,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login", "/admin/:path*", "/dashboard/:path*", "/tickets/:path*", "/users/:path*", "/reports/:path*", "/settings/:path*"],
+  matcher: ["/login", "/admin/:path*", "/dashboard/:path*", "/tickets/:path*", "/users/:path*", "/reports/:path*", "/settings/:path*", "/portal/chamados/:path*"],
 };

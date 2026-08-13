@@ -13,21 +13,21 @@ import {
 
 const channels = [
   {
-    href: "/externo/chat",
-    icon: MessageCircle,
-    eyebrow: "Resposta imediata",
-    title: "Falar pelo chat",
-    description: "Converse com um especialista e resolva sua dúvida em tempo real.",
-    action: "Iniciar conversa",
+    href: "/portal/login?dest=chamado",
+    icon: ClipboardPlus,
+    eyebrow: "Abertura de chamado",
+    title: "Abrir um chamado",
+    description: "Registre sua solicitação e acompanhe cada atualização pelo protocolo.",
+    action: "Criar chamado",
     featured: true,
   },
   {
-    href: "/externo/email",
-    icon: ClipboardPlus,
-    eyebrow: "Acompanhe por e-mail",
-    title: "Abrir um chamado",
-    description: "Envie todos os detalhes do problema e acompanhe pelo protocolo.",
-    action: "Criar chamado",
+    href: "/portal/login?dest=email",
+    icon: MessageCircle,
+    eyebrow: "Atendimento por e-mail",
+    title: "Enviar um e-mail",
+    description: "Registre sua solicitação com detalhes e acompanhe tudo pelo protocolo.",
+    action: "Enviar e-mail",
     featured: false,
   },
 ];
@@ -44,7 +44,7 @@ export default function PortalExterno() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(circle_at_50%_-10%,#d9f4df_0%,transparent_62%)]" />
       <div className="relative mx-auto max-w-6xl px-5 pb-14 pt-6 sm:px-8 lg:px-10 lg:pt-8">
         <header className="flex items-center justify-between">
-          <Link href="/externo" className="flex items-center gap-3 text-[#0f6b2e]" aria-label="Nuvio atendimento">
+          <Link href="/portal" className="flex items-center gap-3 text-[#0f6b2e]" aria-label="Nuvio atendimento">
             <span className="grid h-10 w-10 place-items-center rounded-[13px] bg-[#0f6b2e] text-lg font-bold text-white shadow-lg shadow-[#0f6b2e]/20">N</span>
             <span className="text-xl font-bold tracking-[-0.04em]">nuvio</span>
           </Link>

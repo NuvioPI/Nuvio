@@ -18,6 +18,7 @@ import { Settings } from "@/components/animate-ui/icons/settings";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: MessageSquareText, label: "Chamados", href: "/tickets" },
+  { icon: MessageSquareText, label: "Chat Ao Vivo", href: "/tickets/live-chat" },
   { icon: Plus, label: "Novo Chamado", href: "/tickets/new" },
   { icon: Layers, label: "Base de Conhecimento", href: "/knowledge-base" },
   { icon: UsersRound, label: "Usuários", href: "/users" },

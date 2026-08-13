@@ -24,7 +24,7 @@ require_once __DIR__ . '/../controllers/AnexoController.php';
 require_once __DIR__ . '/../controllers/AvaliacaoTicketController.php';
 require_once __DIR__ . '/../controllers/TipoUsuarioController.php';
 require_once __DIR__ . '/../controllers/NotificacaoController.php';
-require_once __DIR__ . '/../controllers/PublicSupportController.php';
+require_once __DIR__ . '/../controllers/PortalController.php';
 
 // Captura método e URI
 $method = $_SERVER['REQUEST_METHOD'];
@@ -83,25 +83,25 @@ if ($uri === '/auth/verificar' && $method === 'GET') {
     exit();
 }
 
-// Portal externo: somente abertura de chamado. As demais rotas continuam protegidas.
-if ($uri === '/public/tickets' && $method === 'POST') {
-    $controller = new PublicSupportController();
-    $controller->createTicket();
-    exit();
-}
-
-if (preg_match('#^/public/chats/(\d+)$#', $uri, $coincidencias)) {
-    $controller = new PublicSupportController();
-    if ($method === 'GET') $controller->messages((int) $coincidencias[1]);
-    elseif ($method === 'POST') $controller->sendMessage((int) $coincidencias[1]);
-    else { http_response_code(405); echo json_encode(['erro' => 'Método não permitido.']); }
-    exit();
-}
-
 // -------------------------------------------------------
 // Rotas protegidas — requerem token JWT válido
 // -------------------------------------------------------
 $usuarioAutenticado = autenticar();
+
+// Área autenticada do portal do cliente.
+if (preg_match('#^/portal/tickets(?:/(\d+)(?:/mensagens)?)?$#', $uri, $portalMatch)) {
+    $portal = new PortalController((int) $usuarioAutenticado['idUsuario']);
+    $idPortal = isset($portalMatch[1]) ? (int) $portalMatch[1] : null;
+    $mensagens = str_ends_with($uri, '/mensagens');
+
+    if ($method === 'GET' && $idPortal === null) $portal->index();
+    elseif ($method === 'POST' && $idPortal === null) $portal->create();
+    elseif ($method === 'GET' && $idPortal !== null && !$mensagens) $portal->show($idPortal);
+    elseif ($method === 'GET' && $idPortal !== null && $mensagens) $portal->messages($idPortal);
+    elseif ($method === 'POST' && $idPortal !== null && $mensagens) $portal->sendMessage($idPortal);
+    else { http_response_code(405); echo json_encode(['erro' => 'Método não permitido.']); }
+    exit();
+}
 
 // Extrair ID da URI para rotas com parâmetro (ex: /tickets/5)
 $uriParts = explode('/', ltrim($uri, '/'));
