@@ -30,6 +30,15 @@ const channels = [
     action: "Enviar e-mail",
     featured: false,
   },
+  {
+    href: "/portal/login?dest=chat",
+    icon: MessageCircle,
+    eyebrow: "Atendimento em tempo real",
+    title: "Chat ao vivo",
+    description: "Converse diretamente com a equipe e resolva sua dúvida sem esperar.",
+    action: "Abrir chat",
+    featured: false,
+  },
 ];
 
 const faqs = [
