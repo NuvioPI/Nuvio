@@ -20,8 +20,17 @@ class AuthController
     {
         $body = json_decode(file_get_contents('php://input'), true);
 
+        // Logging básico para depuração de login (não grava senhas)
+        $logDir = __DIR__ . '/../logs';
+        if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+        $logFile = $logDir . '/auth.log';
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '??';
+        $emailLog = is_array($body) && isset($body['email']) ? $body['email'] : 'desconhecido';
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " | LOGIN ATTEMPT | IP={$ip} | email={$emailLog}\n", FILE_APPEND);
+
         if (empty($body['email']) || empty($body['senha'])) {
             http_response_code(400);
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " | LOGIN FAILED | missing credentials | IP={$ip} | email={$emailLog}\n", FILE_APPEND);
             echo json_encode(['erro' => 'Email e senha são obrigatórios.']);
             return;
         }
@@ -29,6 +38,7 @@ class AuthController
         $usuario = $this->buscarPorEmailComTipo($body['email']);
         if (!$usuario) {
             http_response_code(401);
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " | LOGIN FAILED | user not found | IP={$ip} | email={$emailLog}\n", FILE_APPEND);
             echo json_encode(['erro' => 'Credenciais inválidas.']);
             return;
         }
@@ -36,6 +46,7 @@ class AuthController
         $senhaHash = $usuario['senhahash'] ?? $usuario['senhaHash'] ?? null;
         if (!$senhaHash || !password_verify($body['senha'], $senhaHash)) {
             http_response_code(401);
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " | LOGIN FAILED | invalid password | IP={$ip} | email={$emailLog}\n", FILE_APPEND);
             echo json_encode(['erro' => 'Credenciais inválidas.']);
             return;
         }
@@ -51,6 +62,8 @@ class AuthController
             'nome' => $usuario['nome'],
             'tipo' => $tipo,
         ]);
+
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " | LOGIN SUCCESS | IP={$ip} | idUsuario={$idUsuario} | email={$emailLog}\n", FILE_APPEND);
 
         echo json_encode([
             'mensagem' => 'Login realizado com sucesso.',
