@@ -1,33 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
-export function Chat({ ticketId }: { ticketId?: number }) {
+type ChatProps = { ticketId?: number; publicMode?: boolean };
+
+export function Chat({ ticketId, publicMode = false }: ChatProps) {
   const [mensagens, setMensagens] = useState<any[]>([]);
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const refScroll = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    // placeholder: no backend real de chat exposto, usamos respostas como fallback
-    async function carregar() {
-      // se quiser, buscar histórico via API quando disponível
-    }
-    carregar();
+    // carregar histórico quando existir endpoint
   }, [ticketId]);
+
+  useEffect(() => {
+    // rolar para baixo quando mensagens mudam
+    if (refScroll.current) {
+      refScroll.current.scrollTop = refScroll.current.scrollHeight;
+    }
+  }, [mensagens]);
 
   async function enviar() {
     if (!texto.trim()) return;
     setEnviando(true);
     try {
-      // fallback: criar uma resposta de ticket (útil para registro)
       if (ticketId) {
         await apiFetch<any>("/respostas", {
           method: "POST",
           body: JSON.stringify({ idTicket: ticketId, idUsuario: null, msgTicket: texto }),
         });
       }
-      const nova = { id: Date.now(), texto, autor: 'Você', data: new Date().toISOString() };
+
+      const nova = { id: Date.now(), texto, autor: publicMode ? (nome || 'Cliente') : 'Você', data: new Date().toISOString() };
       setMensagens((s) => [...s, nova]);
       setTexto("");
     } catch (err) {
@@ -38,14 +46,32 @@ export function Chat({ ticketId }: { ticketId?: number }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto p-4 space-y-3 bg-(--muted) rounded"> 
-        {mensagens.length === 0 && <div className="text-sm text-(--muted-foreground)">Nenhuma mensagem ainda.</div>}
+    <div className="flex flex-col h-full bg-gradient-to-b from-white to-(--muted) p-4 rounded">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-10 h-10 rounded-full bg-[#0f6b2e] text-white flex items-center justify-center font-semibold">S</div>
+        <div>
+          <div className="font-medium">Suporte</div>
+          <div className="text-xs text-(--muted-foreground)">Atendimento ao cliente</div>
+        </div>
+      </div>
+
+      {publicMode && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+          <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome" className="p-2 rounded border" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Seu email" className="p-2 rounded border" />
+        </div>
+      )}
+
+      <div ref={refScroll} className="flex-1 overflow-auto p-3 space-y-3 bg-(--card) rounded">
+        {mensagens.length === 0 && <div className="text-sm text-(--muted-foreground)">Sem mensagens — comece a conversar.</div>}
         {mensagens.map((m) => (
-          <div key={m.id} className="p-2 rounded bg-(--card)">
-            <div className="text-sm font-medium">{m.autor}</div>
-            <div className="text-sm">{m.texto || m.msgTicket}</div>
-            <div className="text-xs text-(--muted-foreground)">{new Date(m.data).toLocaleString()}</div>
+          <div key={m.id} className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-(--muted) flex items-center justify-center text-xs">{(m.autor || '').charAt(0)}</div>
+            <div>
+              <div className="text-sm font-semibold">{m.autor}</div>
+              <div className="mt-1 p-2 bg-white rounded shadow-sm max-w-[36rem]">{m.texto || m.msgTicket}</div>
+              <div className="text-xs text-(--muted-foreground) mt-1">{new Date(m.data).toLocaleString()}</div>
+            </div>
           </div>
         ))}
       </div>
