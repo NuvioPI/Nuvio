@@ -55,15 +55,15 @@ class PortalController extends BaseController
 
             $stmt = $this->db->prepare(
                 'INSERT INTO Ticket (idTecnico, idUsuario, idCategoria, idSLA, titulo, descricao, statusTicket, prioridade, dataAbertura)
-                 VALUES (?, ?, ?, ?, ?, ?, "Aberto", ?, NOW())'
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
             );
-            $stmt->execute([$idTecnico, $this->idUsuario, $idCategoria, $idSLA, strip_tags($titulo), strip_tags($descricao), $prioridade]);
+            $stmt->execute([$idTecnico, $this->idUsuario, $idCategoria, $idSLA, strip_tags($titulo), strip_tags($descricao), 'Aberto', $prioridade]);
             $idTicket = (int) $this->db->lastInsertId();
 
             $historico = $this->db->prepare(
-                'INSERT INTO HistoricoTicket (idTicket, idUsuario, acao, campoAlterado, valorNovo) VALUES (?, ?, "Criacao", "statusTicket", "Aberto")'
+                'INSERT INTO HistoricoTicket (idTicket, idUsuario, acao, campoAlterado, valorNovo) VALUES (?, ?, ?, ?, ?)'
             );
-            $historico->execute([$idTicket, $this->idUsuario]);
+            $historico->execute([$idTicket, $this->idUsuario, 'Criacao', 'statusTicket', 'Aberto']);
             $this->db->commit();
 
             $this->respond(['mensagem' => 'Chamado aberto com sucesso.', 'idTicket' => $idTicket], 201);
