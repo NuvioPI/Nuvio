@@ -15,12 +15,15 @@ export default function PortalLoginPage() {
   const [enviando, setEnviando] = useState(false);
   const [destino] = useState(() => {
     if (typeof window === "undefined") return "chamado";
-    return new URLSearchParams(window.location.search).get("dest") === "email" ? "email" : "chamado";
+    const valor = new URLSearchParams(window.location.search).get("dest");
+    return valor === "email" || valor === "chat" ? valor : "chamado";
   });
 
+  const destinoAposLogin = destino === "chat" ? "/portal/chat" : `/portal/chamados?novo=${destino}`;
+
   useEffect(() => {
-    if (!carregando && usuario) router.replace(`/portal/chamados?novo=${destino}`);
-  }, [carregando, destino, router, usuario]);
+    if (!carregando && usuario) router.replace(destinoAposLogin);
+  }, [carregando, destinoAposLogin, router, usuario]);
 
   async function entrar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,7 +35,7 @@ export default function PortalLoginPage() {
       setErro(resultado.erro || "Não foi possível entrar. Confira seus dados.");
       return;
     }
-    router.replace(`/portal/chamados?novo=${destino}`);
+    router.replace(destinoAposLogin);
   }
 
   return (

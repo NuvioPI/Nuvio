@@ -71,18 +71,22 @@ class PortalController extends BaseController
 
             $stmt = $this->db->prepare(
                 'INSERT INTO Ticket (idTecnico, idUsuario, idCategoria, idSLA, titulo, descricao, statusTicket, prioridade, dataAbertura)
-                 VALUES (?, ?, ?, ?, ?, ?, "Aberto", ?, NOW())'
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
             );
-            $stmt->execute([$idTecnico, $this->idUsuario, $idCategoria, $idSLA, strip_tags($titulo), strip_tags($descricao), $prioridade]);
+            $stmt->execute([$idTecnico, $this->idUsuario, $idCategoria, $idSLA, strip_tags($titulo), strip_tags($descricao), 'Aberto', $prioridade]);
             $idTicket = (int) $this->db->lastInsertId();
 
             $historico = $this->db->prepare(
-                'INSERT INTO HistoricoTicket (idTicket, idUsuario, acao, campoAlterado, valorNovo) VALUES (?, ?, "Criacao", "statusTicket", "Aberto")'
+                'INSERT INTO HistoricoTicket (idTicket, idUsuario, acao, campoAlterado, valorNovo) VALUES (?, ?, ?, ?, ?)'
             );
-            $historico->execute([$idTicket, $this->idUsuario]);
+            $historico->execute([$idTicket, $this->idUsuario, 'Criacao', 'statusTicket', 'Aberto']);
             $this->db->commit();
 
             $this->respond(['mensagem' => 'Chamado aberto com sucesso.', 'idTicket' => $idTicket], 201);
+        } catch (RuntimeException $erro) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            error_log('PortalController::create - ' . $erro->getMessage());
+            $this->respond(['erro' => $erro->getMessage()], 503);
         } catch (Throwable $erro) {
             if ($this->db->inTransaction()) $this->db->rollBack();
             $this->respond(['erro' => 'Não foi possível abrir o chamado.'], 500);
@@ -148,8 +152,44 @@ class PortalController extends BaseController
     private function configuracaoPadrao()
     {
         $tecnico = $this->db->query('SELECT idTecnico FROM Tecnico WHERE ativo = 1 ORDER BY idTecnico LIMIT 1')->fetchColumn();
+        if (!$tecnico) {
+            $usuarioResponsavel = $this->db->query(
+                "SELECT u.idUsuario
+                 FROM Usuario u
+                 LEFT JOIN Tecnico t ON t.idUsuario = u.idUsuario
+                 WHERE t.idTecnico IS NULL
+                   AND (LOWER(u.cargo) IN ('administrador', 'tecnico', 'técnico')
+                        OR LOWER(u.setor) LIKE '%suporte%'
+                        OR LOWER(u.setor) LIKE '%ti%')
+                 ORDER BY u.idUsuario ASC LIMIT 1"
+            )->fetchColumn();
+
+            if ($usuarioResponsavel) {
+                $criarTecnico = $this->db->prepare(
+                    'INSERT INTO Tecnico (idUsuario, especialidade, ativo) VALUES (?, ?, 1)'
+                );
+                $criarTecnico->execute([(int) $usuarioResponsavel, 'Atendimento geral']);
+                $tecnico = (int) $this->db->lastInsertId();
+            }
+        }
+
         $categoria = $this->db->query('SELECT idCategoria FROM Categoria ORDER BY idCategoria LIMIT 1')->fetchColumn();
+        if (!$categoria) {
+            $criarCategoria = $this->db->prepare(
+                'INSERT INTO Categoria (nomeCategoria, descricao) VALUES (?, ?)'
+            );
+            $criarCategoria->execute(['Suporte geral', 'Solicitacoes recebidas pelo portal do cliente']);
+            $categoria = (int) $this->db->lastInsertId();
+        }
+
         $sla = $this->db->query('SELECT idSLA FROM SLA ORDER BY idSLA LIMIT 1')->fetchColumn();
+        if (!$sla) {
+            $criarSla = $this->db->prepare(
+                'INSERT INTO SLA (nomeSLA, tempoRespostaMinutos, tempoResolucaoMinutos, descricao) VALUES (?, ?, ?, ?)'
+            );
+            $criarSla->execute(['Padrao', 240, 1440, 'Atendimento padrao do portal']);
+            $sla = (int) $this->db->lastInsertId();
+        }
         if (!$tecnico || !$categoria || !$sla) throw new RuntimeException('Configuração de atendimento incompleta.');
         return [(int) $tecnico, (int) $categoria, (int) $sla];
     }
