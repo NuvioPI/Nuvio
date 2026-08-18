@@ -159,28 +159,52 @@ class AuthController
 
     public function me()
     {
-        $auth = autenticar();
-        $usuario = $this->usuario->buscarPorId($auth['idUsuario']);
-        if ($usuario) {
+        try {
+            $auth = autenticar();
+            $idUsuario = (int) ($auth['idUsuario'] ?? $auth['idusuario'] ?? $auth['id'] ?? 0);
+
+            $usuario = null;
+            if ($idUsuario > 0) {
+                $usuario = $this->usuario->buscarPorId($idUsuario);
+            }
+
+            if ($usuario) {
+                echo json_encode([
+                    'usuario' => [
+                        'id' => (int) ($usuario['idusuario'] ?? $usuario['idUsuario']),
+                        'idtipoUsuario' => (int) ($usuario['idtipousuario'] ?? $usuario['idtipoUsuario'] ?? 1),
+                        'nome' => $usuario['nome'] ?? $auth['nome'] ?? 'Usuário',
+                        'email' => $usuario['email'] ?? $auth['email'] ?? '',
+                        'cargo' => $usuario['cargo'] ?? null,
+                        'setor' => $usuario['setor'] ?? null,
+                        'telefone' => $usuario['telefone'] ?? null,
+                        'fotoPerfil' => $usuario['fotoPerfil'] ?? $usuario['fotoperfil'] ?? null,
+                        'dataCadastro' => $usuario['dataCadastro'] ?? $usuario['datacadastro'] ?? null,
+                        'tipo' => $usuario['tipo'] ?? $auth['tipo'] ?? 'Cliente',
+                    ],
+                ]);
+                return;
+            }
+
+            // Se não encontrou no banco mas o token é válido, retorna dados do token
             echo json_encode([
                 'usuario' => [
-                    'id' => (int) ($usuario['idusuario'] ?? $usuario['idUsuario']),
-                    'idtipoUsuario' => (int) ($usuario['idtipousuario'] ?? $usuario['idtipoUsuario']),
-                    'nome' => $usuario['nome'],
-                    'email' => $usuario['email'],
-                    'cargo' => $usuario['cargo'] ?? null,
-                    'setor' => $usuario['setor'] ?? null,
-                    'telefone' => $usuario['telefone'] ?? null,
-                    'fotoPerfil' => $usuario['fotoPerfil'] ?? $usuario['fotoperfil'] ?? null,
-                    'dataCadastro' => $usuario['dataCadastro'] ?? $usuario['datacadastro'] ?? null,
-                    'tipo' => $usuario['tipo'] ?? $auth['tipo'] ?? null,
+                    'id' => $idUsuario,
+                    'idtipoUsuario' => (int) ($auth['idtipoUsuario'] ?? $auth['idtipousuario'] ?? 1),
+                    'nome' => $auth['nome'] ?? 'Usuário',
+                    'email' => $auth['email'] ?? '',
+                    'cargo' => null,
+                    'setor' => null,
+                    'telefone' => null,
+                    'fotoPerfil' => null,
+                    'dataCadastro' => null,
+                    'tipo' => $auth['tipo'] ?? 'Cliente',
                 ],
             ]);
-            return;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['erro' => 'Erro ao consultar perfil: ' . $e->getMessage()]);
         }
-
-        http_response_code(404);
-        echo json_encode(['erro' => 'Usuário não encontrado.']);
     }
 
     public function atualizarPerfil($idUsuario)

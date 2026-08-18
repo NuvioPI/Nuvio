@@ -58,15 +58,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const tokenSalvo = getCookie('token');
-    const usuarioSalvo = localStorage.getItem('usuario');
+    const tokenSalvo = getCookie('token') || (typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null);
+    const usuarioSalvo = typeof localStorage !== 'undefined' ? localStorage.getItem('usuario') : null;
 
-    if (tokenSalvo && usuarioSalvo) {
-      try {
-        setToken(tokenSalvo);
-        setUsuario(JSON.parse(usuarioSalvo));
-      } catch {
-        // ignore JSON parse error
+    if (tokenSalvo) {
+      setToken(tokenSalvo);
+      if (usuarioSalvo) {
+        try {
+          setUsuario(JSON.parse(usuarioSalvo));
+        } catch {
+          // ignore JSON parse error
+        }
       }
     }
     setCarregando(false);
@@ -104,7 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setCookie('token', data.token!, 8);
-      localStorage.setItem('usuario', JSON.stringify(data.usuario));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('token', data.token!);
+        localStorage.setItem('usuario', JSON.stringify(data.usuario));
+      }
       setToken(data.token!);
       setUsuario(data.usuario!);
 
@@ -117,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function logout(destino = '/login') {
     removerCookie('token');
     if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('token');
       localStorage.removeItem('usuario');
     }
     setToken(null);

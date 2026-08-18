@@ -106,16 +106,19 @@ export default function PerfilPage() {
     try {
       setCarregando(true);
       setErro(null);
+      
       const res = await apiFetch<{ usuario: PerfilUsuario }>("/auth/verificar", { method: "GET" });
       const u = res.usuario || (res as any);
-      setUsuario(u);
-
-      setFormNome(u.nome || "");
-      setFormEmail(u.email || "");
-      setFormCargo(u.cargo || "");
-      setFormSetor(u.setor || "");
-      setFormTelefone(u.telefone || "");
-      setFormFoto(u.fotoPerfil || "");
+      
+      if (u) {
+        setUsuario(u);
+        setFormNome(u.nome || "");
+        setFormEmail(u.email || "");
+        setFormCargo(u.cargo || "");
+        setFormSetor(u.setor || "");
+        setFormTelefone(u.telefone || "");
+        setFormFoto(u.fotoPerfil || "");
+      }
 
       try {
         const ticketRes = await apiFetch<{ tickets: TicketItem[] }>("/tickets", { method: "GET" });
@@ -126,7 +129,17 @@ export default function PerfilPage() {
         // Tickets opcionais
       }
     } catch (e: any) {
-      setErro(e.message || "Não foi possível carregar os dados do perfil.");
+      if (usuarioContext) {
+        setUsuario(usuarioContext as any);
+        setFormNome(usuarioContext.nome || "");
+        setFormEmail(usuarioContext.email || "");
+        setFormCargo(usuarioContext.cargo || "");
+        setFormSetor(usuarioContext.setor || "");
+        setFormTelefone(usuarioContext.telefone || "");
+        setFormFoto(usuarioContext.fotoPerfil || "");
+      } else {
+        setErro(e.message || "Não foi possível carregar os dados do perfil.");
+      }
     } finally {
       setCarregando(false);
     }
@@ -320,12 +333,20 @@ export default function PerfilPage() {
         <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
         <h2 className="mt-4 text-xl font-bold text-(--foreground)">Erro ao carregar perfil</h2>
         <p className="mt-2 text-sm text-(--muted-foreground)">{erro}</p>
-        <button
-          onClick={carregarPerfil}
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-(--primary) px-4 py-2.5 text-sm font-medium text-(--primary-foreground) transition hover:opacity-90 cursor-pointer"
-        >
-          <RefreshCw className="h-4 w-4" /> Tentar novamente
-        </button>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={carregarPerfil}
+            className="inline-flex items-center gap-2 rounded-xl bg-(--primary) px-4 py-2.5 text-sm font-medium text-(--primary-foreground) transition hover:opacity-90 cursor-pointer"
+          >
+            <RefreshCw className="h-4 w-4" /> Tentar novamente
+          </button>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 rounded-xl border border-(--border) bg-(--card) px-4 py-2.5 text-sm font-medium text-(--foreground) transition hover:bg-(--hoverbg)"
+          >
+            Fazer Login
+          </Link>
+        </div>
       </div>
     );
   }

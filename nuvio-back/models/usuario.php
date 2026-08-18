@@ -21,36 +21,66 @@ class Usuario
 
     public function buscarPorEmail($email)
     {
-        $stmt = $this->db->prepare("
-            SELECT u.*, tu.descricao AS tipo
-            FROM Usuario u
-            LEFT JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
-            WHERE u.email = ?
-            LIMIT 1
-        ");
-        $stmt->execute([$email]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($result) {
-            $this->mapUsuario($result);
+        try {
+            $stmt = $this->db->prepare("
+                SELECT u.*, tu.descricao AS tipo
+                FROM Usuario u
+                LEFT JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
+                WHERE u.email = ?
+                LIMIT 1
+            ");
+            $stmt->execute([$email]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($result) {
+                $this->mapUsuario($result);
+                return $result;
+            }
+        } catch (PDOException $e) {
+            try {
+                $stmt = $this->db->prepare("SELECT * FROM Usuario WHERE email = ? LIMIT 1");
+                $stmt->execute([$email]);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($result) {
+                    $this->mapUsuario($result);
+                    return $result;
+                }
+            } catch (PDOException $e2) {
+                return null;
+            }
         }
-        return $result ?: null;
+        return null;
     }
 
     public function buscarPorId($id)
     {
-        $stmt = $this->db->prepare("
-            SELECT u.*, tu.descricao AS tipo
-            FROM Usuario u
-            LEFT JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
-            WHERE u.idUsuario = ?
-            LIMIT 1
-        ");
-        $stmt->execute([(int)$id]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($result) {
-            $this->mapUsuario($result);
+        try {
+            $stmt = $this->db->prepare("
+                SELECT u.*, tu.descricao AS tipo
+                FROM Usuario u
+                LEFT JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
+                WHERE u.idUsuario = ? OR u.idusuario = ?
+                LIMIT 1
+            ");
+            $stmt->execute([(int)$id, (int)$id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($result) {
+                $this->mapUsuario($result);
+                return $result;
+            }
+        } catch (PDOException $e) {
+            try {
+                $stmt = $this->db->prepare("SELECT * FROM Usuario WHERE idUsuario = ? OR idusuario = ? LIMIT 1");
+                $stmt->execute([(int)$id, (int)$id]);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($result) {
+                    $this->mapUsuario($result);
+                    return $result;
+                }
+            } catch (PDOException $e2) {
+                return null;
+            }
         }
-        return $result ?: null;
+        return null;
     }
 
     public function criar()
