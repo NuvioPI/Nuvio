@@ -17,6 +17,12 @@ class Ticket
     public $dataAbertura;
     public $dataFechamento;
 
+    public $nomeUsuario;
+    public $emailUsuario;
+    public $nomeTecnico;
+    public $nomeCategoria;
+    public $nomeSLA;
+
     public function __construct($conexao)
     {
         $this->conn = $conexao;

@@ -18,6 +18,20 @@ abstract class BaseController
         return is_array($body) ? $body : [];
     }
 
+    protected function existeRegistro(string $tabela, string $campoId, $valor): bool
+    {
+        if (!is_numeric($valor) || (int) $valor <= 0) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT 1 FROM ' . $tabela . ' WHERE ' . $campoId . ' = ? LIMIT 1'
+        );
+        $stmt->execute([(int) $valor]);
+
+        return (bool) $stmt->fetchColumn();
+    }
+
     protected function respond($data, $status = 200)
     {
         http_response_code($status);

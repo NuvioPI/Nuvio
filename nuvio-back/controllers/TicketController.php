@@ -3,6 +3,7 @@
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Ticket.php';
 require_once __DIR__ . '/../models/HistoricoTicket.php';
+require_once __DIR__ . '/../services/EmailService.php';
 
 class TicketController extends BaseController
 {
@@ -168,6 +169,38 @@ class TicketController extends BaseController
             $this->respond([
                 'erro' => 'Os identificadores devem ser números inteiros maiores que zero.'
             ], 400);
+
+            return;
+        }
+
+        if (!$this->existeRegistro('Usuario', 'idUsuario', $body['idUsuario'])) {
+            $this->respond([
+                'erro' => 'Usuário informado não existe.'
+            ], 404);
+
+            return;
+        }
+
+        if (!$this->existeRegistro('Tecnico', 'idTecnico', $body['idTecnico'])) {
+            $this->respond([
+                'erro' => 'Técnico informado não existe.'
+            ], 404);
+
+            return;
+        }
+
+        if (!$this->existeRegistro('Categoria', 'idCategoria', $body['idCategoria'])) {
+            $this->respond([
+                'erro' => 'Categoria informada não existe.'
+            ], 404);
+
+            return;
+        }
+
+        if (!$this->existeRegistro('SLA', 'idSLA', $body['idSLA'])) {
+            $this->respond([
+                'erro' => 'SLA informado não existe.'
+            ], 404);
 
             return;
         }
@@ -417,26 +450,39 @@ class TicketController extends BaseController
                 throw new RuntimeException('Falha ao atualizar o ticket.');
             }
 
-            foreach ($alteracoes as $alteracao) {
-                if (!$this->historico->registrar(
-                    $id,
-                    $this->idUsuarioAutenticado,
-                    $this->acaoHistorico($alteracao['campo']),
-                    $alteracao['campo'],
-                    $alteracao['valorAnterior'],
-                    $alteracao['valorNovo']
-                )) {
-                    throw new RuntimeException(
-                        'Falha ao registrar o histórico.'
-                    );
-                }
-            }
+           $statusAlterado = null;
 
-            $this->db->commit();
+    foreach ($alteracoes as $alteracao) {
+        if (!$this->historico->registrar(
+            $id,
+            $this->idUsuarioAutenticado,
+            $this->acaoHistorico($alteracao['campo']),
+            $alteracao['campo'],
+            $alteracao['valorAnterior'],
+            $alteracao['valorNovo']
+        )) {
+            throw new RuntimeException(
+                'Falha ao registrar o histórico.'
+            );
+        }
 
-            $this->respond([
-                'mensagem' => 'Ticket atualizado com sucesso.'
-            ]);
+        if ($alteracao['campo'] === 'statusTicket') {
+            $statusAlterado = $alteracao;
+        }
+    }
+
+    $this->db->commit();
+
+    if ($statusAlterado !== null) {
+        $this->enviarEmailAlteracaoStatus(
+            $ticketExistente,
+            (string) $statusAlterado['valorNovo']
+        );
+    }
+
+    $this->respond([
+        'mensagem' => 'Ticket atualizado com sucesso.'
+    ]);
         } catch (PDOException $erro) {
             $this->desfazerTransacao();
 
@@ -615,4 +661,25 @@ class TicketController extends BaseController
         return is_string($status) &&
             in_array(trim($status), self::STATUS_VALIDOS, true);
     }
+    private function enviarEmailAlteracaoStatus(Ticket $ticketExistente, string $statusNovo): void
+{
+    try {
+        if (empty($ticketExistente->emailUsuario)) {
+            return;
+        }
+
+        $emailService = new EmailService();
+
+        $emailService->enviarStatusTicket(
+            $ticketExistente->emailUsuario,
+            $ticketExistente->nomeUsuario ?? 'usuário',
+            (int) $ticketExistente->idTicket,
+            $ticketExistente->titulo ?? 'Sem título',
+            $ticketExistente->statusTicket ?? 'Não informado',
+            $statusNovo
+        );
+    } catch (Throwable $erro) {
+        error_log('Erro ao enviar email de status do ticket: ' . $erro->getMessage());
+    }
+}
 }
