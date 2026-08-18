@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,12 +24,14 @@ import {
   Camera,
   ExternalLink,
   ShieldCheck,
-  Award,
-  Layers,
   ArrowUpRight,
   RefreshCw,
   Eye,
-  EyeOff
+  EyeOff,
+  UploadCloud,
+  ImageIcon,
+  Loader2,
+  Trash2
 } from "lucide-react";
 import { apiFetch, API_URL } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -81,6 +83,7 @@ export default function PerfilPage() {
   const [formTelefone, setFormTelefone] = useState("");
   const [formFoto, setFormFoto] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [uploadandoFoto, setUploadandoFoto] = useState(false);
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
   const [mensagemErro, setMensagemErro] = useState<string | null>(null);
 
@@ -96,6 +99,9 @@ export default function PerfilPage() {
   const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [copiadoCampo, setCopiadoCampo] = useState<string | null>(null);
 
+  // Input de arquivo para o bucket
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const carregarPerfil = async () => {
     try {
       setCarregando(true);
@@ -104,7 +110,6 @@ export default function PerfilPage() {
       const u = res.usuario || (res as any);
       setUsuario(u);
 
-      // Preenche o formulário
       setFormNome(u.nome || "");
       setFormEmail(u.email || "");
       setFormCargo(u.cargo || "");
@@ -112,7 +117,6 @@ export default function PerfilPage() {
       setFormTelefone(u.telefone || "");
       setFormFoto(u.fotoPerfil || "");
 
-      // Busca tickets para estatísticas
       try {
         const ticketRes = await apiFetch<{ tickets: TicketItem[] }>("/tickets", { method: "GET" });
         if (ticketRes?.tickets) {
@@ -136,6 +140,52 @@ export default function PerfilPage() {
     navigator.clipboard.writeText(texto);
     setCopiadoCampo(campo);
     setTimeout(() => setCopiadoCampo(null), 2000);
+  };
+
+  // Upload direto para o Bucket de Imagens
+  const handleUploadFotoArquivo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validação básica de tamanho (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setMensagemErro("A imagem selecionada é maior que 10MB.");
+      return;
+    }
+
+    setUploadandoFoto(true);
+    setMensagemSucesso(null);
+    setMensagemErro(null);
+
+    const formData = new FormData();
+    formData.append("foto", file);
+
+    try {
+      const res = await apiFetch<{
+        sucesso: boolean;
+        url: string;
+        caminho: string;
+        mensagem: string;
+      }>("/upload/foto", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.sucesso) {
+        setFormFoto(res.caminho);
+        setUsuario((prev) => (prev ? { ...prev, fotoPerfil: res.caminho } : null));
+        atualizarUsuario({ fotoPerfil: res.caminho });
+        setMensagemSucesso("Foto enviada para o bucket com sucesso!");
+        setTimeout(() => setMensagemSucesso(null), 4000);
+      }
+    } catch (err: any) {
+      setMensagemErro(err.message || "Falha ao enviar a imagem para o bucket.");
+    } finally {
+      setUploadandoFoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   const handleSalvarPerfil = async (e: React.FormEvent) => {
@@ -224,8 +274,9 @@ export default function PerfilPage() {
   const fotoResolvida = useMemo(() => {
     const f = usuario?.fotoPerfil || formFoto;
     if (!f) return "/balls.jpeg";
-    if (f.startsWith("http") || f.startsWith("data:") || f.startsWith("/")) return f;
-    return `${API_URL}/${f}`;
+    if (f.startsWith("http") || f.startsWith("data:")) return f;
+    const path = f.startsWith("/") ? f : `/${f}`;
+    return `${API_URL}${path}`;
   }, [usuario?.fotoPerfil, formFoto]);
 
   const stats = useMemo(() => {
@@ -281,6 +332,15 @@ export default function PerfilPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-12">
+      {/* INPUT OCULTO DE UPLOAD PARA O BUCKET */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleUploadFotoArquivo}
+        accept="image/png, image/jpeg, image/webp, image/gif"
+        className="hidden"
+      />
+
       {/* HERO BANNER CARD */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
@@ -309,12 +369,18 @@ export default function PerfilPage() {
                     sizes="128px"
                     className="object-cover transition duration-300 group-hover:scale-105"
                   />
+                  {uploadandoFoto && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-xs text-white">
+                      <Loader2 className="h-7 w-7 animate-spin" />
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"
-                  onClick={() => setAbaAtiva("editar")}
-                  title="Alterar foto de perfil"
-                  className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full bg-(--primary) text-white shadow-lg ring-2 ring-(--card) transition hover:scale-110 active:scale-95 cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadandoFoto}
+                  title="Fazer upload de nova foto para o bucket"
+                  className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full bg-(--primary) text-white shadow-lg ring-2 ring-(--card) transition hover:scale-110 active:scale-95 cursor-pointer disabled:opacity-50"
                 >
                   <Camera className="h-4 w-4" />
                 </button>
@@ -357,7 +423,7 @@ export default function PerfilPage() {
                   <span>•</span>
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    Conta Ativa
+                    Bucket Conectado
                   </span>
                 </div>
               </div>
@@ -365,6 +431,15 @@ export default function PerfilPage() {
 
             {/* AÇÕES RÁPIDAS NO HEADER */}
             <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadandoFoto}
+                className="inline-flex items-center gap-2 rounded-xl border border-(--border) bg-(--card) px-3.5 py-2.5 text-sm font-medium text-(--foreground) shadow-xs transition hover:bg-(--hoverbg) active:scale-[0.98] cursor-pointer"
+              >
+                <UploadCloud className="h-4 w-4 text-(--primary)" />
+                Enviar Foto
+              </button>
               <button
                 type="button"
                 onClick={() => setAbaAtiva("editar")}
@@ -638,6 +713,32 @@ export default function PerfilPage() {
 
           {/* COLUNA DIREITA (1 coluna) */}
           <div className="space-y-6">
+            {/* CARD DO BUCKET DE IMAGENS */}
+            <div className="rounded-3xl border border-(--card-border) bg-(--card) p-6 shadow-sm">
+              <h3 className="text-sm font-semibold text-(--foreground) flex items-center gap-2">
+                <UploadCloud className="h-4 w-4 text-(--primary)" />
+                Bucket de Armazenamento
+              </h3>
+              <p className="mt-1 text-xs text-(--muted-foreground)">
+                Armazenamento de mídia integrado com o banco de dados Aiven MySQL.
+              </p>
+
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="mt-4 border-2 border-dashed border-(--border) hover:border-(--primary) rounded-2xl p-5 text-center transition bg-(--muted)/20 hover:bg-(--hoverbg) cursor-pointer group"
+              >
+                <div className="mx-auto h-10 w-10 rounded-full bg-(--primary)/10 text-(--primary) flex items-center justify-center transition group-hover:scale-110">
+                  <ImageIcon className="h-5 w-5" />
+                </div>
+                <p className="mt-2 text-xs font-semibold text-(--foreground)">
+                  Clique para carregar uma nova foto
+                </p>
+                <p className="mt-1 text-[11px] text-(--muted-foreground)">
+                  JPG, PNG, WEBP ou GIF (até 10MB)
+                </p>
+              </div>
+            </div>
+
             {/* CARD DE STATUS DA CONTA */}
             <div className="rounded-3xl border border-(--card-border) bg-(--card) p-6 shadow-sm">
               <h3 className="text-sm font-semibold text-(--foreground) flex items-center gap-2">
@@ -757,31 +858,46 @@ export default function PerfilPage() {
           </div>
 
           <form onSubmit={handleSalvarPerfil} className="mt-6 space-y-6">
-            {/* SELEÇÃO DE AVATAR */}
+            {/* SELEÇÃO DE AVATAR / UPLOAD PARA BUCKET */}
             <div>
               <label className="block text-xs font-semibold text-(--foreground) mb-2">
-                Foto de Perfil / Avatar
+                Foto de Perfil & Bucket
               </label>
               <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-2xl bg-(--muted)/30 border border-(--border)">
                 <div className="relative h-20 w-20 rounded-full overflow-hidden ring-2 ring-(--primary) bg-(--muted) shrink-0">
                   <Image
-                    src={formFoto || "/balls.jpeg"}
+                    src={fotoResolvida}
                     alt="Preview"
                     fill
                     sizes="80px"
                     className="object-cover"
                   />
+                  {uploadandoFoto && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 space-y-3 w-full">
-                  <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadandoFoto}
+                      className="inline-flex items-center gap-2 rounded-xl bg-(--primary) px-3.5 py-2 text-xs font-medium text-(--primary-foreground) transition hover:bg-(--primary-hover) cursor-pointer disabled:opacity-50"
+                    >
+                      <UploadCloud className="h-3.5 w-3.5" />
+                      {uploadandoFoto ? "Enviando imagem..." : "Upload do Computador"}
+                    </button>
                     <input
                       type="text"
-                      placeholder="Cole a URL da sua foto (ex: https://...)"
+                      placeholder="Ou cole a URL da sua foto (ex: https://...)"
                       value={formFoto}
                       onChange={(e) => setFormFoto(e.target.value)}
-                      className="w-full rounded-xl border border-(--border) bg-(--background) px-3.5 py-2 text-xs text-(--foreground) outline-none transition focus:border-(--ring) focus:ring-2 focus:ring-(--ring)/20"
+                      className="flex-1 min-w-[200px] rounded-xl border border-(--border) bg-(--background) px-3.5 py-2 text-xs text-(--foreground) outline-none transition focus:border-(--ring) focus:ring-2 focus:ring-(--ring)/20"
                     />
                   </div>
+
                   <div>
                     <p className="text-[11px] text-(--muted-foreground) mb-1.5">Ou escolha um avatar pré-definido:</p>
                     <div className="flex items-center gap-2 overflow-x-auto pb-1">
@@ -904,7 +1020,7 @@ export default function PerfilPage() {
               </button>
               <button
                 type="submit"
-                disabled={salvando}
+                disabled={salvando || uploadandoFoto}
                 className="inline-flex items-center gap-2 rounded-xl bg-(--primary) px-5 py-2.5 text-sm font-medium text-(--primary-foreground) shadow transition hover:bg-(--primary-hover) disabled:opacity-50 cursor-pointer"
               >
                 {salvando ? (

@@ -25,6 +25,7 @@ require_once __DIR__ . '/../controllers/AvaliacaoTicketController.php';
 require_once __DIR__ . '/../controllers/TipoUsuarioController.php';
 require_once __DIR__ . '/../controllers/NotificacaoController.php';
 require_once __DIR__ . '/../controllers/PortalController.php';
+require_once __DIR__ . '/../controllers/UploadController.php';
 
 // Captura método e URI
 $method = $_SERVER['REQUEST_METHOD'];
@@ -41,6 +42,29 @@ if ($scriptName && str_starts_with($uri, $scriptName)) {
 $uri = preg_replace('#^/nuvio-back/routes/api\.php#', '', $uri);
 $uri = preg_replace('#^/nuvio-back/routes#', '', $uri);
 $uri = $uri === '' ? '/' : $uri;
+
+// Servir arquivos do bucket de uploads estáticos com headers CORS
+if (str_starts_with($uri, '/uploads/')) {
+    $caminhoLimpo = ltrim($uri, '/');
+    if (!str_contains($caminhoLimpo, '..')) {
+        $caminhoArquivo = __DIR__ . '/../public/' . $caminhoLimpo;
+        if (file_exists($caminhoArquivo) && is_file($caminhoArquivo)) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = finfo_file($finfo, $caminhoArquivo) ?: 'application/octet-stream';
+            finfo_close($finfo);
+
+            header('Content-Type: ' . $mime);
+            header('Content-Length: ' . filesize($caminhoArquivo));
+            header('Cache-Control: public, max-age=86400');
+            readfile($caminhoArquivo);
+            exit();
+        }
+    }
+
+    http_response_code(404);
+    echo json_encode(['erro' => 'Arquivo não encontrado no bucket.']);
+    exit();
+}
 
 // Handle OPTIONS (preflight CORS)
 if ($method === 'OPTIONS') {
@@ -97,6 +121,19 @@ if ($uri === '/auth/verificar' && $method === 'GET') {
 if ($uri === '/auth/perfil' && ($method === 'PUT' || $method === 'POST')) {
     $controller = new AuthController();
     $controller->atualizarPerfil((int) $usuarioAutenticado['idUsuario']);
+    exit();
+}
+
+// Uploads no Bucket
+if ($uri === '/upload/foto' && $method === 'POST') {
+    $controller = new UploadController();
+    $controller->uploadFotoPerfil((int) $usuarioAutenticado['idUsuario']);
+    exit();
+}
+
+if ($uri === '/upload/anexo' && $method === 'POST') {
+    $controller = new UploadController();
+    $controller->uploadAnexoTicket((int) $usuarioAutenticado['idUsuario']);
     exit();
 }
 

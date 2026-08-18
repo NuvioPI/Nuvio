@@ -12,7 +12,9 @@ export async function apiFetch<T>(caminho: string, opcoes: RequestInit = {}): Pr
   const headers = new Headers(opcoes.headers);
 
   headers.set("Accept", "application/json");
-  if (opcoes.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  if (opcoes.body && !(opcoes.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const resposta = await fetch(`${API_URL}${caminho}`, {
