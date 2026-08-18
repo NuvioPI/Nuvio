@@ -138,16 +138,16 @@ class AuthController
         if ($usuario) {
             echo json_encode([
                 'usuario' => [
-                    'id' => $usuario['idusuario'] ?? $usuario['idUsuario'],
-                    'idtipoUsuario' => $usuario['idtipousuario'] ?? $usuario['idtipoUsuario'],
+                    'id' => (int) ($usuario['idusuario'] ?? $usuario['idUsuario']),
+                    'idtipoUsuario' => (int) ($usuario['idtipousuario'] ?? $usuario['idtipoUsuario']),
                     'nome' => $usuario['nome'],
                     'email' => $usuario['email'],
-                    'cargo' => $usuario['cargo'],
-                    'setor' => $usuario['setor'],
+                    'cargo' => $usuario['cargo'] ?? null,
+                    'setor' => $usuario['setor'] ?? null,
                     'telefone' => $usuario['telefone'] ?? null,
                     'fotoPerfil' => $usuario['fotoPerfil'] ?? $usuario['fotoperfil'] ?? null,
                     'dataCadastro' => $usuario['dataCadastro'] ?? $usuario['datacadastro'] ?? null,
-                    'tipo' => $auth['tipo'] ?? null,
+                    'tipo' => $usuario['tipo'] ?? $auth['tipo'] ?? null,
                 ],
             ]);
             return;
@@ -155,6 +155,65 @@ class AuthController
 
         http_response_code(404);
         echo json_encode(['erro' => 'Usuário não encontrado.']);
+    }
+
+    public function atualizarPerfil($idUsuario)
+    {
+        $body = json_decode(file_get_contents('php://input'), true);
+
+        if (empty($body['nome']) || empty($body['email'])) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'Nome e e-mail são obrigatórios.']);
+            return;
+        }
+
+        $this->usuario->idUsuario = (int) $idUsuario;
+        if (!$this->usuario->get()) {
+            http_response_code(404);
+            echo json_encode(['erro' => 'Usuário não encontrado.']);
+            return;
+        }
+
+        if ($body['email'] !== $this->usuario->email && $this->usuario->emailExiste($body['email'])) {
+            http_response_code(409);
+            echo json_encode(['erro' => 'Este e-mail já está em uso por outro usuário.']);
+            return;
+        }
+
+        $this->usuario->nome = htmlspecialchars(strip_tags($body['nome']));
+        $this->usuario->email = htmlspecialchars(strip_tags($body['email']));
+        if (isset($body['cargo'])) $this->usuario->cargo = htmlspecialchars(strip_tags($body['cargo']));
+        if (isset($body['setor'])) $this->usuario->setor = htmlspecialchars(strip_tags($body['setor']));
+        if (isset($body['telefone'])) $this->usuario->telefone = htmlspecialchars(strip_tags($body['telefone']));
+        if (isset($body['fotoPerfil'])) $this->usuario->fotoPerfil = htmlspecialchars(strip_tags($body['fotoPerfil']));
+
+        if ($this->usuario->update()) {
+            if (!empty($body['senha'])) {
+                $this->usuario->updateSenha(password_hash($body['senha'], PASSWORD_BCRYPT));
+            }
+
+            $usuarioAtualizado = $this->usuario->buscarPorId($idUsuario);
+
+            echo json_encode([
+                'mensagem' => 'Perfil atualizado com sucesso!',
+                'usuario' => [
+                    'id' => (int) ($usuarioAtualizado['idusuario'] ?? $usuarioAtualizado['idUsuario']),
+                    'idtipoUsuario' => (int) ($usuarioAtualizado['idtipousuario'] ?? $usuarioAtualizado['idtipoUsuario']),
+                    'nome' => $usuarioAtualizado['nome'],
+                    'email' => $usuarioAtualizado['email'],
+                    'cargo' => $usuarioAtualizado['cargo'] ?? null,
+                    'setor' => $usuarioAtualizado['setor'] ?? null,
+                    'telefone' => $usuarioAtualizado['telefone'] ?? null,
+                    'fotoPerfil' => $usuarioAtualizado['fotoPerfil'] ?? $usuarioAtualizado['fotoperfil'] ?? null,
+                    'dataCadastro' => $usuarioAtualizado['dataCadastro'] ?? $usuarioAtualizado['datacadastro'] ?? null,
+                    'tipo' => $usuarioAtualizado['tipo'] ?? null,
+                ]
+            ]);
+            return;
+        }
+
+        http_response_code(500);
+        echo json_encode(['erro' => 'Não foi possível atualizar o perfil.']);
     }
 
     private function buscarPorEmailComTipo(string $email)

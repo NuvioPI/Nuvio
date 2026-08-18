@@ -88,6 +88,13 @@ if ($uri === '/auth/verificar' && $method === 'GET') {
 // -------------------------------------------------------
 $usuarioAutenticado = autenticar();
 
+// Atualização do próprio perfil
+if ($uri === '/auth/perfil' && ($method === 'PUT' || $method === 'POST')) {
+    $controller = new AuthController();
+    $controller->atualizarPerfil((int) $usuarioAutenticado['idUsuario']);
+    exit();
+}
+
 // Área autenticada do portal do cliente.
 if (preg_match('#^/portal/tickets(?:/(\d+)(?:/mensagens)?)?$#', $uri, $portalMatch)) {
     $portal = new PortalController((int) $usuarioAutenticado['idUsuario']);

@@ -1,35 +1,50 @@
 "use client";
 
 import Link from "next/link";
-
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch, API_URL } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 export function Profile() {
     const [open, setOpen] = useState(false);
+    const { usuario, logout } = useAuth();
     const [nome, setNome] = useState<string | null>(null);
     const [foto, setFoto] = useState<string | null>(null);
 
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        if (usuario?.nome) {
+            setNome(usuario.nome);
+        }
+        if (usuario?.fotoPerfil) {
+            const fotoVal = usuario.fotoPerfil;
+            if (fotoVal.startsWith('http') || fotoVal.startsWith('data:')) {
+                setFoto(fotoVal);
+            } else {
+                setFoto(`${API_URL}${fotoVal.startsWith('/') ? '' : '/'}${fotoVal}`);
+            }
+        }
+
         (async () => {
             try {
                 const dados = await apiFetch<any>("/auth/verificar", { method: "GET" });
-                const u = dados;
-                // `me()` retorna objeto do usuário diretamente
-                setNome(u.nome || null);
-                const fotoVal = u.fotoPerfil || u.fotoperfil || null;
+                const u = dados.usuario ?? dados;
+                if (u?.nome) setNome(u.nome);
+                const fotoVal = u?.fotoPerfil || u?.fotoperfil || null;
                 if (fotoVal) {
-                    // prefixa URL quando necessário
-                    if (fotoVal.startsWith('http')) setFoto(fotoVal);
-                    else setFoto(`${API_URL}${fotoVal.startsWith('/') ? '' : '/'}${fotoVal}`);
+                    if (fotoVal.startsWith('http') || fotoVal.startsWith('data:')) {
+                        setFoto(fotoVal);
+                    } else {
+                        setFoto(`${API_URL}${fotoVal.startsWith('/') ? '' : '/'}${fotoVal}`);
+                    }
                 }
             } catch (err) {
                 // ignora
             }
         })();
+
         function handleClickOutside(event: MouseEvent) {
             if (
                 dropdownRef.current &&
@@ -46,27 +61,28 @@ export function Profile() {
         }
 
         document.addEventListener("mousedown", handleClickOutside);
-
         document.addEventListener("keydown", handleEscape);
 
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
-
             document.removeEventListener("keydown", handleEscape);
         };
-    }, []);
+    }, [usuario]);
 
     return (
         <div ref={dropdownRef} className="relative">
             <button
                 onClick={() => setOpen(!open)}
                 className="
+                    relative
                     bg-white/50
                     rounded-full
                     cursor-pointer
                     hover:bg-white/70
                     transition-colors
+                    p-0.5
                 "
+                aria-label="Abrir menu do perfil"
             >
                 <div
                     className="
@@ -74,7 +90,7 @@ export function Profile() {
                     bg-(--online)
                     rounded-full
                     absolute
-                    top-8 right-0
+                    bottom-0 right-0
                     outline-2
                     outline-(--sidebar)
                 "
@@ -83,6 +99,7 @@ export function Profile() {
                 <Image
                     className="
                     rounded-full
+                    object-cover
                     outline-2
                     outline-offset-2
                     outline-(--online)
@@ -102,8 +119,8 @@ export function Profile() {
                 <div
                     className="
                         flex flex-col justify-start items-start
-                        p-4
-                        gap-2
+                        p-2
+                        gap-1
                         absolute
                         right-0
                         top-14
@@ -111,37 +128,56 @@ export function Profile() {
                         bg-(--card)
                         border border-(--card-border)
                         rounded-2xl
-                        p-2
                         shadow-xl
                         z-50
                     "
                 >
-                    <div className="block w-full p-2">
-                        {nome ? <div className="font-semibold">{nome}</div> : null}
+                    <div className="block w-full p-2.5 border-b border-(--border)">
+                        <div className="font-semibold text-sm text-(--foreground) truncate">{nome || usuario?.nome || "Meu Perfil"}</div>
+                        <div className="text-xs text-(--muted-foreground) truncate">{usuario?.email || "Conectado"}</div>
                     </div>
 
-                    <Link href="/perfil" className="dropdown-item block w-full">
-                        Meu Perfil
-                    </Link>
-
-                    <Link href="/portal" className="dropdown-item block w-full">
-                        Portal do Cliente
-                    </Link>
-
-                    <Link href="/admin/login" className="dropdown-item block w-full">
-                        Admin
-                    </Link>
-
-                    <Link
-                        href="/"
-                        className="
-                        block
-                        dropdown-item
-                        text-red-500
-                        w-full"
+                    <Link 
+                        href="/perfil" 
+                        onClick={() => setOpen(false)}
+                        className="w-full px-3 py-2 text-sm text-(--foreground) rounded-xl hover:bg-(--hoverbg) transition-colors flex items-center gap-2"
                     >
-                        Sair
+                        <span>👤</span> Meu Perfil
                     </Link>
+
+                    <Link 
+                        href="/portal" 
+                        onClick={() => setOpen(false)}
+                        className="w-full px-3 py-2 text-sm text-(--foreground) rounded-xl hover:bg-(--hoverbg) transition-colors flex items-center gap-2"
+                    >
+                        <span>🌐</span> Portal do Cliente
+                    </Link>
+
+                    <Link 
+                        href="/admin/dashboard" 
+                        onClick={() => setOpen(false)}
+                        className="w-full px-3 py-2 text-sm text-(--foreground) rounded-xl hover:bg-(--hoverbg) transition-colors flex items-center gap-2"
+                    >
+                        <span>🛡️</span> Painel Admin
+                    </Link>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setOpen(false);
+                            logout('/login');
+                        }}
+                        className="
+                        w-full text-left px-3 py-2 text-sm
+                        text-red-500
+                        rounded-xl
+                        hover:bg-red-500/10
+                        transition-colors
+                        cursor-pointer
+                        flex items-center gap-2"
+                    >
+                        <span>🚪</span> Sair
+                    </button>
                 </div>
             )}
         </div>

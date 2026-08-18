@@ -27,6 +27,9 @@ CREATE TABLE Usuario (
     senhaHash VARCHAR(155) NOT NULL,
     cargo VARCHAR(55) NOT NULL,
     setor VARCHAR(55) NOT NULL,
+    telefone VARCHAR(25) NULL,
+    fotoPerfil VARCHAR(255) NULL,
+    dataCadastro DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_usuario_tipoUsuario
         FOREIGN KEY (idtipoUsuario)

@@ -21,9 +21,15 @@ class Usuario
 
     public function buscarPorEmail($email)
     {
-        $stmt = $this->db->prepare("SELECT * FROM Usuario WHERE email = ?");
+        $stmt = $this->db->prepare("
+            SELECT u.*, tu.descricao AS tipo
+            FROM Usuario u
+            LEFT JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
+            WHERE u.email = ?
+            LIMIT 1
+        ");
         $stmt->execute([$email]);
-        $result = $stmt->fetch();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($result) {
             $this->mapUsuario($result);
         }
@@ -32,9 +38,15 @@ class Usuario
 
     public function buscarPorId($id)
     {
-        $stmt = $this->db->prepare("SELECT * FROM Usuario WHERE idUsuario = ?");
-        $stmt->execute([$id]);
-        $result = $stmt->fetch();
+        $stmt = $this->db->prepare("
+            SELECT u.*, tu.descricao AS tipo
+            FROM Usuario u
+            LEFT JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
+            WHERE u.idUsuario = ?
+            LIMIT 1
+        ");
+        $stmt->execute([(int)$id]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($result) {
             $this->mapUsuario($result);
         }
@@ -44,17 +56,34 @@ class Usuario
     public function criar()
     {
         $stmt = $this->db->prepare(
-            "INSERT INTO Usuario (idtipoUsuario, nome, email, senhaHash, cargo, setor)
-             VALUES (?, ?, ?, ?, ?, ?)"
+            "INSERT INTO Usuario (idtipoUsuario, nome, email, senhaHash, cargo, setor, telefone, fotoPerfil)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         );
-        $result = $stmt->execute([
-            $this->idtipoUsuario,
-            $this->nome,
-            $this->email,
-            $this->senhaHash,
-            $this->cargo,
-            $this->setor
-        ]);
+        try {
+            $result = $stmt->execute([
+                $this->idtipoUsuario,
+                $this->nome,
+                $this->email,
+                $this->senhaHash,
+                $this->cargo,
+                $this->setor,
+                $this->telefone,
+                $this->fotoPerfil
+            ]);
+        } catch (PDOException $e) {
+            $stmtFallback = $this->db->prepare(
+                "INSERT INTO Usuario (idtipoUsuario, nome, email, senhaHash, cargo, setor)
+                 VALUES (?, ?, ?, ?, ?, ?)"
+            );
+            $result = $stmtFallback->execute([
+                $this->idtipoUsuario,
+                $this->nome,
+                $this->email,
+                $this->senhaHash,
+                $this->cargo,
+                $this->setor
+            ]);
+        }
         if ($result) {
             $this->idUsuario = (int) $this->db->lastInsertId();
         }
@@ -65,27 +94,31 @@ class Usuario
     {
         $stmt = $this->db->prepare(
             'SELECT u.idUsuario, u.idtipoUsuario, u.nome, u.email, u.cargo, u.setor,
+                    u.telefone, u.fotoPerfil, u.dataCadastro,
                     tu.descricao AS tipo
              FROM Usuario u
-             INNER JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
+             LEFT JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
              ORDER BY u.nome ASC'
         );
-        $stmt->execute();
-        return $stmt;
+        try {
+            $stmt->execute();
+            return $stmt;
+        } catch (PDOException $e) {
+            $stmtFallback = $this->db->prepare(
+                'SELECT u.idUsuario, u.idtipoUsuario, u.nome, u.email, u.cargo, u.setor,
+                        tu.descricao AS tipo
+                 FROM Usuario u
+                 LEFT JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
+                 ORDER BY u.nome ASC'
+            );
+            $stmtFallback->execute();
+            return $stmtFallback;
+        }
     }
 
     public function find($id)
     {
-        $stmt = $this->db->prepare(
-            'SELECT u.idUsuario, u.idtipoUsuario, u.nome, u.email, u.cargo, u.setor,
-                    tu.descricao AS tipo
-             FROM Usuario u
-             INNER JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
-             WHERE u.idUsuario = ?
-             LIMIT 1'
-        );
-        $stmt->execute([(int) $id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        return $this->buscarPorId($id);
     }
 
     public function get()
@@ -108,17 +141,34 @@ class Usuario
     {
         $stmt = $this->db->prepare(
             'UPDATE Usuario
-             SET nome = ?, email = ?, cargo = ?, setor = ?
+             SET nome = ?, email = ?, cargo = ?, setor = ?, telefone = ?, fotoPerfil = ?
              WHERE idUsuario = ?'
         );
 
-        return $stmt->execute([
-            $this->nome,
-            $this->email,
-            $this->cargo,
-            $this->setor,
-            (int) $this->idUsuario,
-        ]);
+        try {
+            return $stmt->execute([
+                $this->nome,
+                $this->email,
+                $this->cargo,
+                $this->setor,
+                $this->telefone,
+                $this->fotoPerfil,
+                (int) $this->idUsuario,
+            ]);
+        } catch (PDOException $e) {
+            $stmtFallback = $this->db->prepare(
+                'UPDATE Usuario
+                 SET nome = ?, email = ?, cargo = ?, setor = ?
+                 WHERE idUsuario = ?'
+            );
+            return $stmtFallback->execute([
+                $this->nome,
+                $this->email,
+                $this->cargo,
+                $this->setor,
+                (int) $this->idUsuario,
+            ]);
+        }
     }
 
     public function updateSenha($senhaHash)
@@ -143,7 +193,7 @@ class Usuario
 
     private function mapUsuario($row)
     {
-        $this->idUsuario = $row['idusuario'] ?? null;
+        $this->idUsuario = $row['idusuario'] ?? $row['idUsuario'] ?? null;
         $this->idtipoUsuario = $row['idtipoUsuario'] ?? $row['idtipousuario'] ?? null;
         $this->nome = $row['nome'] ?? null;
         $this->email = $row['email'] ?? null;

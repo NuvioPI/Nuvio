@@ -4,14 +4,19 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useRouter } from 'next/navigation';
 import { API_URL } from '@/lib/api';
 
-interface Usuario {
+export interface Usuario {
   id: number;
   nome: string;
   email: string;
-  tipo: {
+  cargo?: string | null;
+  setor?: string | null;
+  telefone?: string | null;
+  fotoPerfil?: string | null;
+  dataCadastro?: string | null;
+  tipo?: {
     id: number;
     nome: string;
-  };
+  } | string | null;
 }
 
 interface AuthContextType {
@@ -23,6 +28,7 @@ interface AuthContextType {
     opcoes?: { somenteAdministrador?: boolean }
   ) => Promise<{ sucesso: boolean; erro?: string; usuario?: Usuario }>;
   logout: (destino?: string) => void;
+  atualizarUsuario: (novosDados: Partial<Usuario>) => void;
   carregando: boolean;
 }
 
@@ -35,11 +41,13 @@ function setCookie(nome: string, valor: string, horas: number) {
 }
 
 function getCookie(nome: string) {
+  if (typeof document === 'undefined') return null;
   const match = document.cookie.match(new RegExp('(^| )' + nome + '=([^;]+)'));
   return match ? match[2] : null;
 }
 
 function removerCookie(nome: string) {
+  if (typeof document === 'undefined') return;
   document.cookie = `${nome}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 }
 
@@ -51,11 +59,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const tokenSalvo = getCookie('token');
-    const usuarioSalvo = localStorage.getItem('usuario'); // dados não sensíveis, ok no localStorage
+    const usuarioSalvo = localStorage.getItem('usuario');
 
     if (tokenSalvo && usuarioSalvo) {
-      setToken(tokenSalvo);
-      setUsuario(JSON.parse(usuarioSalvo));
+      try {
+        setToken(tokenSalvo);
+        setUsuario(JSON.parse(usuarioSalvo));
+      } catch {
+        // ignore JSON parse error
+      }
     }
     setCarregando(false);
   }, []);
@@ -86,7 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { sucesso: false, erro: data.erro || 'Erro ao fazer login' };
       }
 
-      if (opcoes.somenteAdministrador && data.usuario.tipo?.nome !== 'Administrador') {
+      const tipoNome = typeof data.usuario.tipo === 'object' && data.usuario.tipo !== null ? data.usuario.tipo.nome : data.usuario.tipo;
+      if (opcoes.somenteAdministrador && tipoNome !== 'Administrador') {
         return { sucesso: false, erro: 'Acesso restrito a administradores.' };
       }
 
@@ -101,16 +114,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  function logout(destino = '/admin/login') {
+  function logout(destino = '/login') {
     removerCookie('token');
-    localStorage.removeItem('usuario');
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('usuario');
+    }
     setToken(null);
     setUsuario(null);
     router.push(destino);
   }
 
+  function atualizarUsuario(novosDados: Partial<Usuario>) {
+    setUsuario((atual) => {
+      if (!atual) return null;
+      const atualizado = { ...atual, ...novosDados };
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('usuario', JSON.stringify(atualizado));
+      }
+      return atualizado;
+    });
+  }
+
   return (
-    <AuthContext.Provider value={{ usuario, token, login, logout, carregando }}>
+    <AuthContext.Provider value={{ usuario, token, login, logout, atualizarUsuario, carregando }}>
       {children}
     </AuthContext.Provider>
   );
