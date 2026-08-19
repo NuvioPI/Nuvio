@@ -26,6 +26,7 @@ import {
   UploadCloud,
   ImageIcon,
   Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { apiFetch, API_URL } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
