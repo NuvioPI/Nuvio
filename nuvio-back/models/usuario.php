@@ -209,13 +209,21 @@ class Usuario
 
     public function updateFotoPerfil(int $idUsuario, string $caminho): bool
     {
-        $stmt = $this->db->prepare('UPDATE Usuario SET fotoPerfil = ? WHERE idUsuario = ?');
-        try {
-            $resultado = $stmt->execute([$caminho, $idUsuario]);
-            return $resultado && $stmt->rowCount() > 0;
-        } catch (PDOException $e) {
-            return false;
+        // Tenta primeiro com o nome camelCase, depois com minúsculo
+        // (bancos case-sensitive como Aiven MySQL usam o nome original da migration)
+        foreach (['fotoPerfil', 'fotoperfil'] as $coluna) {
+            try {
+                $stmt = $this->db->prepare("UPDATE Usuario SET {$coluna} = ? WHERE idUsuario = ?");
+                $resultado = $stmt->execute([$caminho, $idUsuario]);
+                if ($resultado) {
+                    return true;
+                }
+            } catch (PDOException $e) {
+                // Tenta a próxima variação
+                continue;
+            }
         }
+        return false;
     }
 
     public function delete()
