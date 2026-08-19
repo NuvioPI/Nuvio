@@ -1,9 +1,12 @@
 import Link from "next/link";
+import Image from "next/image";
+import { API_URL } from "@/lib/api";
 
 export type TicketResumo = {
   idTicket: number;
   titulo: string;
   nomeUsuario: string;
+  fotoPerfil?: string | null;
   prioridade: "Alta" | "Media" | "Baixa";
   statusTicket: string;
   dataAbertura: string;
@@ -24,6 +27,32 @@ const statusClasses: Record<string, string> = {
 
 function dataFormatada(data: string) {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(data));
+}
+
+function resolverFoto(foto?: string | null): string | null {
+  if (!foto) return null;
+  if (foto.startsWith("data:") || foto.startsWith("http")) return foto;
+  return `${API_URL}${foto.startsWith("/") ? "" : "/"}${foto}`;
+}
+
+function AvatarUsuario({ nome, foto }: { nome: string; foto?: string | null }) {
+  const src = resolverFoto(foto);
+  if (src) {
+    if (src.startsWith("data:")) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt={nome} className="h-6 w-6 rounded-full object-cover flex-shrink-0" />
+      );
+    }
+    return (
+      <Image src={src} alt={nome} width={24} height={24} className="rounded-full object-cover flex-shrink-0" />
+    );
+  }
+  return (
+    <span className="grid h-6 w-6 place-items-center rounded-full bg-(--primary) text-xs text-white flex-shrink-0">
+      {nome?.slice(0, 1).toUpperCase()}
+    </span>
+  );
 }
 
 export default function Table({ tickets, carregando }: { tickets: TicketResumo[]; carregando: boolean }) {
@@ -51,10 +80,12 @@ export default function Table({ tickets, carregando }: { tickets: TicketResumo[]
               <tr key={ticket.idTicket} className="hover:bg-black/5 border-b border-(--card-border) transition-colors">
                 <td className="py-4 text-(--foreground) pl-4 md:pl-0">#{ticket.idTicket}</td>
                 <td className="py-4 text-(--foreground)">{ticket.titulo}</td>
-                <td className="py-4"><div className="flex gap-2 items-center text-(--foreground)">
-                  <span className="grid h-6 w-6 place-items-center rounded-full bg-(--primary) text-xs text-white">{ticket.nomeUsuario?.slice(0, 1).toUpperCase()}</span>
-                  {ticket.nomeUsuario}
-                </div></td>
+                <td className="py-4">
+                  <div className="flex gap-2 items-center text-(--foreground)">
+                    <AvatarUsuario nome={ticket.nomeUsuario} foto={ticket.fotoPerfil} />
+                    {ticket.nomeUsuario}
+                  </div>
+                </td>
                 <td className="py-4"><span className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${prioridadeClasses[ticket.prioridade] ?? "bg-zinc-100 text-zinc-700"}`}>{ticket.prioridade}</span></td>
                 <td className="py-4"><span className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${statusClasses[ticket.statusTicket] ?? "bg-zinc-100 text-zinc-700"}`}>{ticket.statusTicket}</span></td>
                 <td className="py-4 text-zinc-500 pr-4 md:pr-0">{dataFormatada(ticket.dataAbertura)}</td>
