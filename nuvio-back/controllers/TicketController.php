@@ -257,6 +257,24 @@ class TicketController extends BaseController
 
             $this->db->commit();
 
+            // attempt to notify the user by email about the new ticket
+            try {
+                $ticketCompleto = new Ticket($this->db);
+                $ticketCompleto->idTicket = (int) $this->ticket->idTicket;
+                if ($ticketCompleto->getById() && !empty($ticketCompleto->emailUsuario)) {
+                    $emailService = new EmailService();
+                    $emailService->enviarNovoTicket(
+                        $ticketCompleto->emailUsuario,
+                        $ticketCompleto->nomeUsuario ?? 'usuário',
+                        (int) $ticketCompleto->idTicket,
+                        $ticketCompleto->titulo ?? ''
+                    );
+                }
+            } catch (Throwable $e) {
+                // don't break creation flow on email errors
+                error_log('Erro ao enviar email de criação de ticket: ' . $e->getMessage());
+            }
+
             $this->respond([
                 'mensagem' => 'Ticket criado com sucesso.',
                 'idTicket' => (int) $this->ticket->idTicket

@@ -2,8 +2,46 @@
 
 require_once __DIR__ . '/../config/env.php';
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 class EmailService
 {
+    private function createMailer(): PHPMailer
+    {
+        $mail = new PHPMailer(true);
+
+        $host = env('MAIL_HOST', '');
+        $port = (int) env('MAIL_PORT', 587);
+        $username = env('MAIL_USERNAME', '');
+        $password = env('MAIL_PASSWORD', '');
+        $from = env('MAIL_FROM', 'no-reply@nuvio.local');
+        $fromName = env('MAIL_FROM_NAME', env('APP_NAME', 'Nuvio'));
+        $encryption = env('MAIL_ENCRYPTION', 'tls');
+
+        if ($host !== '') {
+            // Configure SMTP
+            $mail->isSMTP();
+            $mail->Host = $host;
+            $mail->Port = $port;
+            $mail->SMTPAuth = $username !== '' && $password !== '';
+            if ($mail->SMTPAuth) {
+                $mail->Username = $username;
+                $mail->Password = $password;
+            }
+
+            if (in_array(strtolower($encryption), ['ssl', 'tls'], true)) {
+                $mail->SMTPSecure = $encryption;
+            }
+        }
+
+        $mail->setFrom($from, $fromName);
+        $mail->isHTML(false);
+        $mail->CharSet = 'UTF-8';
+
+        return $mail;
+    }
+
     public function enviarStatusTicket(
         string $destinatario,
         string $nomeUsuario,
@@ -17,35 +55,72 @@ class EmailService
         }
 
         $appName = env('APP_NAME', 'Nuvio');
-        $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
+        $assunto = "Atualização do ticket #{$idTicket}";
 
-        $assunto = "Atualizacao do ticket #{$idTicket}";
+        $mensagem = "Olá, {$nomeUsuario}.\n\n" .
+            "O status do seu ticket foi atualizado.\n\n" .
+            "Ticket: #{$idTicket}\n" .
+            "Título: {$tituloTicket}\n" .
+            "Status anterior: {$statusAnterior}\n" .
+            "Novo status: {$statusNovo}\n\n" .
+            "Atenciosamente,\n{$appName}";
 
-        $mensagem = "
-Olá, {$nomeUsuario}.
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($destinatario);
+            $mail->Subject = $assunto;
+            $mail->Body = $mensagem;
+            $mail->send();
 
-O status do seu ticket foi atualizado.
+            return true;
+        } catch (Exception $e) {
+            // fallback to mail()
+            $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
+            $headers = [
+                "From: {$remetente}",
+                "Content-Type: text/plain; charset=UTF-8",
+            ];
 
-Ticket: #{$idTicket}
-Título: {$tituloTicket}
-Status anterior: {$statusAnterior}
-Novo status: {$statusNovo}
+            return mail($destinatario, $assunto, $mensagem, implode("\r\n", $headers));
+        }
+    }
 
-Atenciosamente,
-{$appName}
-";
+    public function enviarNovoTicket(
+        string $destinatario,
+        string $nomeUsuario,
+        int $idTicket,
+        string $tituloTicket
+    ): bool {
+        if (!filter_var($destinatario, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
 
-        $headers = [
-            "From: {$appName} <{$remetente}>",
-            "Reply-To: {$remetente}",
-            "Content-Type: text/plain; charset=UTF-8",
-        ];
+        $appName = env('APP_NAME', 'Nuvio');
+        $assunto = "Seu ticket #{$idTicket} foi criado";
 
-        return mail(
-            $destinatario,
-            $assunto,
-            $mensagem,
-            implode("\r\n", $headers)
-        );
+        $mensagem = "Olá, {$nomeUsuario}.\n\n" .
+            "Seu ticket foi criado com sucesso.\n\n" .
+            "Ticket: #{$idTicket}\n" .
+            "Título: {$tituloTicket}\n" .
+            "Status: Aberto\n\n" .
+            "Atenciosamente,\n{$appName}";
+
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($destinatario);
+            $mail->Subject = $assunto;
+            $mail->Body = $mensagem;
+            $mail->send();
+
+            return true;
+        } catch (Exception $e) {
+            $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
+            $headers = [
+                "From: {$remetente}",
+                "Content-Type: text/plain; charset=UTF-8",
+            ];
+
+            return mail($destinatario, $assunto, $mensagem, implode("\r\n", $headers));
+        }
     }
 }
