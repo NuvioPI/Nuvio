@@ -1,55 +1,438 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { Archive, Bell, Check, LifeBuoy, Menu, MoreHorizontal, Paperclip, Search, Send, Smile, Video, X } from "lucide-react";
+import { FormEvent, useEffect, useRef, useMemo, useState } from "react";
+import {
+  Archive,
+  Bell,
+  Bold,
+  CheckCheck,
+  FileText,
+  Image as ImageIcon,
+  Inbox,
+  LifeBuoy,
+  Link2,
+  List,
+  MoreHorizontal,
+  Paperclip,
+  Search,
+  Send,
+  Smile,
+  Star,
+  Tag,
+  Users,
+  X,
+  Menu,
+  ChevronDown,
+} from "lucide-react";
 
-type Message = { id: number; text: string; mine?: boolean; time: string };
-type Conversation = { id: number; name: string; initials: string; preview: string; time: string; unread?: number; online?: boolean; color: string };
+/* ─── types ─────────────────────────────────────────────── */
+type Message = {
+  id: number;
+  text: string;
+  mine?: boolean;
+  time: string;
+  date?: string;
+  status?: "sent" | "delivered" | "read";
+};
 
+type Conversation = {
+  id: number;
+  name: string;
+  initials: string;
+  email: string;
+  preview: string;
+  time: string;
+  unread?: number;
+  online?: boolean;
+  color: string;
+};
+
+type Category = {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  count?: number;
+  active?: boolean;
+};
+
+/* ─── data ───────────────────────────────────────────────── */
 const conversations: Conversation[] = [
-  { id: 1, name: "Mariana Costa", initials: "MC", preview: "Preciso de ajuda com meu acesso", time: "Agora", unread: 2, online: true, color: "#e9b79d" },
-  { id: 2, name: "Rafael Oliveira", initials: "RO", preview: "Obrigado pelo retorno!", time: "10:42", online: true, color: "#8cb4d9" },
-  { id: 3, name: "Ana Paula Mendes", initials: "AP", preview: "Enviei o comprovante no chamado", time: "09:18", color: "#d3a6c9" },
-  { id: 4, name: "Lucas Martins", initials: "LM", preview: "O problema continua acontecendo", time: "Ontem", color: "#8fc5af" },
-  { id: 5, name: "Beatriz Lima", initials: "BL", preview: "Certo, vou aguardar", time: "Ontem", color: "#dbbd85" },
+  { id: 1, name: "Mariana Costa",   initials: "MC", email: "mariana.costa@technova.com", preview: "Preciso de ajuda com meu acesso",     time: "2m atrás",  unread: 2, online: true,  color: "#e9b79d" },
+  { id: 2, name: "Rafael Oliveira", initials: "RO", email: "rafael.o@email.com",          preview: "Obrigado pelo retorno!",              time: "5m atrás",  online: true,  color: "#8cb4d9" },
+  { id: 3, name: "Ana Paula Mendes",initials: "AP", email: "anapaula@empresa.com",         preview: "Enviei o comprovante no chamado",    time: "10m atrás", color: "#d3a6c9" },
+  { id: 4, name: "Lucas Martins",   initials: "LM", email: "lucas.m@corp.com",             preview: "O problema continua acontecendo",   time: "1h atrás",  color: "#8fc5af" },
+  { id: 5, name: "Beatriz Lima",    initials: "BL", email: "beatriz.lima@mail.com",        preview: "Certo, vou aguardar",               time: "2h atrás",  color: "#dbbd85" },
+  { id: 6, name: "Carlos Andrade",  initials: "CA", email: "candrade@empresa.com",         preview: "Quando estará disponível?",         time: "3h atrás",  color: "#a5c8f0" },
+  { id: 7, name: "Fernanda Torres", initials: "FT", email: "fernanda.t@corp.com",          preview: "Consegui resolver, obrigada!",      time: "Ontem",     color: "#f0b8c8" },
 ];
 
-const initialMessages: Message[] = [
-  { id: 1, text: "Olá, Mariana! Sou a Camila, da equipe Nuvio. Como posso ajudar?", time: "15:31" },
-  { id: 2, text: "Oi, Camila! Não estou conseguindo acessar o painel desde hoje cedo.", mine: true, time: "15:32" },
-  { id: 3, text: "Entendi. Vou verificar seu acesso agora. Você consegue me confirmar o e-mail cadastrado?", time: "15:33" },
-  { id: 4, text: "mariana.costa@technova.com", mine: true, time: "15:34" },
-  { id: 5, text: "Perfeito, encontrei sua conta. Estou atualizando a permissão — pode tentar entrar novamente em alguns segundos?", time: "15:35" },
+const initialMessages: Record<number, Message[]> = {
+  1: [
+    { id: 1, text: "Olá, Mariana! Sou a Camila, da equipe Nuvio. Como posso ajudar?", time: "15:31", date: "Hoje, 13 de agosto" },
+    { id: 2, text: "Oi, Camila! Não estou conseguindo acessar o painel desde hoje cedo.", mine: true, time: "15:32", status: "read" },
+    { id: 3, text: "Entendi. Vou verificar seu acesso agora. Você consegue me confirmar o e-mail cadastrado?", time: "15:33" },
+    { id: 4, text: "mariana.costa@technova.com", mine: true, time: "15:34", status: "read" },
+    { id: 5, text: "Perfeito, encontrei sua conta. Estou atualizando a permissão — pode tentar entrar novamente em alguns segundos?", time: "15:35" },
+  ],
+  2: [
+    { id: 1, text: "Obrigado pelo retorno, Rafael!", time: "10:40", date: "Hoje" },
+    { id: 2, text: "Qualquer coisa é só falar!", mine: true, time: "10:42", status: "delivered" },
+  ],
+};
+
+const categories: Category[] = [
+  { id: "inbox",      label: "Inbox",       icon: <Inbox size={16} />,     count: 223, active: true },
+  { id: "mentions",   label: "Menções",     icon: <Bell size={16} />,      count: 6 },
+  { id: "unassigned", label: "Não atribuído",icon: <Users size={16} />,    count: 30 },
+  { id: "promotions", label: "Promoções",   icon: <Tag size={16} />,       count: 108 },
+  { id: "support",    label: "Suporte",     icon: <LifeBuoy size={16} />,  count: 2 },
+  { id: "archive",    label: "Arquivo",     icon: <Archive size={16} />,   count: 560 },
 ];
 
+const teamMembers = [
+  { name: "Kathryn Murphy",     initials: "KM", color: "#e9b79d" },
+  { name: "Theresa Webb",       initials: "TW", color: "#8cb4d9" },
+  { name: "Darlene Robertson",  initials: "DR", color: "#d3a6c9" },
+  { name: "Arlene McCoy",       initials: "AM", color: "#8fc5af" },
+  { name: "Jane Cooper",        initials: "JC", color: "#dbbd85" },
+];
+
+/* ─── component ─────────────────────────────────────────── */
 export function LiveChatWorkspace() {
-  const [selectedId, setSelectedId] = useState(1);
-  const [search, setSearch] = useState("");
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [mobileList, setMobileList] = useState(false);
-  const selected = conversations.find((conversation) => conversation.id === selectedId) ?? conversations[0];
-  const filtered = useMemo(() => conversations.filter((conversation) => `${conversation.name} ${conversation.preview}`.toLowerCase().includes(search.toLowerCase())), [search]);
+  const [selectedId, setSelectedId]   = useState(1);
+  const [activeCategory, setActiveCategory] = useState("inbox");
+  const [search, setSearch]           = useState("");
+  const [message, setMessage]         = useState("");
+  const [allMessages, setAllMessages] = useState<Record<number, Message[]>>(initialMessages);
+  const [mobileList, setMobileList]   = useState(false);
+  const [typing, setTyping]           = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  function submit(event: FormEvent) {
-    event.preventDefault();
+  const selected  = conversations.find((c) => c.id === selectedId) ?? conversations[0];
+  const messages  = allMessages[selectedId] ?? [];
+  const filtered  = useMemo(
+    () => conversations.filter((c) =>
+      `${c.name} ${c.preview}`.toLowerCase().includes(search.toLowerCase())
+    ),
+    [search]
+  );
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, typing]);
+
+  function submit(e: FormEvent) {
+    e.preventDefault();
     if (!message.trim()) return;
-    setMessages((current) => [...current, { id: Date.now(), text: message.trim(), mine: true, time: new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date()) }]);
+    const now = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
+    setAllMessages((prev) => ({
+      ...prev,
+      [selectedId]: [
+        ...(prev[selectedId] ?? []),
+        { id: Date.now(), text: message.trim(), mine: true, time: now, status: "sent" },
+      ],
+    }));
     setMessage("");
+    setTyping(true);
+    setTimeout(() => setTyping(false), 2500);
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-3rem)] overflow-hidden rounded-[28px] bg-[#0a1b12] p-3 text-white shadow-[0_20px_70px_rgba(10,63,31,.2)] sm:p-5 lg:p-6">
-      <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(#72d98b33_1px,transparent_1px)] [background-size:34px_34px]" />
-      <div className="relative flex min-h-[calc(100vh-7rem)] overflow-hidden rounded-[22px] border border-white/10 bg-[#10251a]">
-        <aside className="hidden w-[68px] shrink-0 flex-col items-center justify-between border-r border-white/10 bg-[#0b1c13] py-5 md:flex"><span className="grid h-10 w-10 place-items-center rounded-[13px] bg-[#2fae5a] text-lg font-bold shadow-lg shadow-[#2fae5a]/20">N</span><div className="flex flex-col items-center gap-5 text-white/45"><RailButton icon={<LifeBuoy size={19} />} active /><RailButton icon={<Bell size={19} />} /><RailButton icon={<Archive size={19} />} /></div><span className="grid h-9 w-9 place-items-center rounded-full bg-[#d9ad84] text-xs font-bold text-[#3d251b]">CA</span></aside>
-        <aside className={`${mobileList ? "flex" : "hidden"} absolute inset-y-0 left-0 z-20 w-[min(88vw,300px)] flex-col border-r border-white/10 bg-[#12291c] md:relative md:flex md:w-[280px]`}><div className="flex items-center justify-between px-5 pb-4 pt-6"><div><p className="text-xs font-medium uppercase tracking-[0.16em] text-[#78d992]">Atendimento</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">Conversas</h1></div><button onClick={() => setMobileList(false)} className="rounded-lg p-2 text-white/50 hover:bg-white/10 md:hidden" aria-label="Fechar conversas"><X size={18} /></button></div><div className="px-4"><div className="flex items-center gap-2 rounded-xl border border-white/5 bg-[#0d2117] px-3 py-2.5 text-white/45"><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar" className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/30" /></div></div><div className="mt-6 flex items-center justify-between px-5 text-xs font-semibold uppercase tracking-[0.13em] text-white/40"><span>Em atendimento</span><span className="rounded-full bg-[#2fae5a]/20 px-2 py-1 text-[#8ae8a0]">{filtered.length}</span></div><div className="mt-2 flex-1 overflow-y-auto px-3 pb-4">{filtered.map((conversation) => <button key={conversation.id} onClick={() => { setSelectedId(conversation.id); setMobileList(false); }} className={`flex w-full items-center gap-3 rounded-2xl p-3 text-left transition ${selectedId === conversation.id ? "bg-[#2fae5a] text-white shadow-lg shadow-[#2fae5a]/15" : "text-white/75 hover:bg-white/5"}`}><Avatar conversation={conversation} /><span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-2"><strong className="truncate text-sm font-semibold">{conversation.name}</strong><small className={`${selectedId === conversation.id ? "text-white/70" : "text-white/35"}`}>{conversation.time}</small></span><span className={`mt-1 block truncate text-xs ${selectedId === conversation.id ? "text-white/75" : "text-white/40"}`}>{conversation.preview}</span></span>{conversation.unread && selectedId !== conversation.id ? <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#68dd82] px-1 text-[10px] font-bold text-[#0c3119]">{conversation.unread}</span> : null}</button>)}</div><div className="border-t border-white/10 px-4 py-4"><div className="flex items-center gap-2 text-xs text-white/45"><span className="h-2 w-2 rounded-full bg-[#73e891]" /> 4 agentes online</div></div></aside>
-        <section className="flex min-w-0 flex-1 flex-col bg-[#173020] [background-image:radial-gradient(ellipse_at_top_right,#2fae5a17,transparent_48%)]"><header className="flex items-center justify-between border-b border-white/10 bg-[#183a24]/90 px-4 py-4 backdrop-blur sm:px-7"><div className="flex min-w-0 items-center gap-3"><button onClick={() => setMobileList(true)} className="rounded-lg p-2 text-white/60 hover:bg-white/10 md:hidden" aria-label="Abrir conversas"><Menu size={20} /></button><Avatar conversation={selected} large /><div className="min-w-0"><h2 className="truncate font-semibold">{selected.name}</h2><p className="mt-0.5 flex items-center gap-1.5 text-xs text-white/50"><span className="h-2 w-2 rounded-full bg-[#73e891]" /> Online agora</p></div></div><div className="flex items-center gap-1 text-white/50"><button className="rounded-xl p-2.5 hover:bg-white/10" aria-label="Iniciar chamada"><Video size={18} /></button><button className="rounded-xl p-2.5 hover:bg-white/10" aria-label="Mais opções"><MoreHorizontal size={19} /></button></div></header><div className="flex items-center justify-between border-b border-white/5 px-5 py-3 text-xs text-white/40 sm:px-7"><span>Hoje, 13 de agosto</span><span className="inline-flex items-center gap-1.5"><Check size={14} className="text-[#73e891]" /> SLA dentro do prazo</span></div><div className="flex-1 space-y-5 overflow-y-auto px-4 py-6 sm:px-8">{messages.map((item) => <div key={item.id} className={`flex items-end gap-2.5 ${item.mine ? "justify-end" : "justify-start"}`}>{!item.mine && <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#2fae5a] text-[10px] font-bold text-white">CN</div>}<div className={`max-w-[min(78%,520px)] rounded-[18px] px-4 py-3 text-sm leading-6 shadow-lg ${item.mine ? "rounded-br-md bg-[#bdeec8] text-[#183a24]" : "rounded-bl-md border border-white/5 bg-[#23472d] text-white/85"}`}><p>{item.text}</p><span className={`mt-1.5 block text-[10px] ${item.mine ? "text-[#427053]" : "text-white/35"}`}>{item.time}{item.mine ? " · Enviado" : ""}</span></div>{item.mine && <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#d9ad84] text-[10px] font-bold text-[#3d251b]">MC</div>}</div>)}<div className="flex items-center gap-2 text-xs text-white/35"><span className="flex gap-1"><i className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#73e891]" /><i className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#73e891] [animation-delay:120ms]" /><i className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#73e891] [animation-delay:240ms]" /></span> Camila está digitando...</div></div><form onSubmit={submit} className="border-t border-white/10 bg-[#12291c]/90 p-4 backdrop-blur sm:px-7 sm:py-5"><div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-[#0d2117] p-2"><button type="button" className="rounded-xl p-2 text-white/40 transition hover:bg-white/10 hover:text-white" aria-label="Adicionar anexo"><Paperclip size={19} /></button><input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Escrever uma mensagem..." className="min-w-0 flex-1 bg-transparent px-1 text-sm text-white outline-none placeholder:text-white/30" /><button type="button" className="hidden rounded-xl p-2 text-white/40 transition hover:bg-white/10 hover:text-white sm:block" aria-label="Adicionar emoji"><Smile size={19} /></button><button type="submit" disabled={!message.trim()} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#2fae5a] text-white transition hover:bg-[#3dc96a] disabled:cursor-not-allowed disabled:opacity-40" aria-label="Enviar mensagem"><Send size={17} /></button></div><p className="mt-2 hidden text-[10px] text-white/25 sm:block">Enter para enviar · Atendimento protegido pela Nuvio</p></form></section>
-      </div>
+    <div className="flex h-[calc(100vh-5rem)] overflow-hidden rounded-2xl border border-(--border) bg-(--card) shadow-sm">
+
+      {/* ── PAINEL 1: categorias ──────────────────────────── */}
+      <aside className="hidden w-56 shrink-0 flex-col border-r border-(--border) bg-(--card) lg:flex">
+        <div className="px-5 pb-4 pt-6">
+          <h1 className="text-xl font-bold text-(--foreground)">Inbox</h1>
+        </div>
+
+        <div className="px-3">
+          <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground)">
+            Conversas
+          </p>
+          <nav className="space-y-0.5">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition cursor-pointer
+                  ${activeCategory === cat.id
+                    ? "bg-(--primary)/10 font-semibold text-(--primary)"
+                    : "text-(--muted-foreground) hover:bg-(--hoverbg) hover:text-(--foreground)"
+                  }`}
+              >
+                <span className={activeCategory === cat.id ? "text-(--primary)" : ""}>{cat.icon}</span>
+                <span className="flex-1 text-left">{cat.label}</span>
+                {cat.count != null && (
+                  <span className={`text-xs font-medium ${activeCategory === cat.id ? "text-(--primary)" : "text-(--muted-foreground)"}`}>
+                    {cat.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <div className="mt-6 px-3">
+          <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground)">
+            Sua equipe
+          </p>
+          <div className="space-y-1">
+            {teamMembers.map((m) => (
+              <button
+                key={m.name}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm text-(--muted-foreground) transition hover:bg-(--hoverbg) hover:text-(--foreground) cursor-pointer"
+              >
+                <span
+                  className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
+                  style={{ backgroundColor: m.color }}
+                >
+                  {m.initials}
+                </span>
+                <span className="truncate">{m.name}</span>
+              </button>
+            ))}
+          </div>
+          <button className="mt-3 flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-(--primary) hover:underline cursor-pointer">
+            + Convidar agente
+          </button>
+        </div>
+      </aside>
+
+      {/* ── PAINEL 2: lista de conversas ─────────────────── */}
+      <aside className={`
+        ${mobileList ? "flex" : "hidden"}
+        absolute inset-y-0 left-0 z-20 w-[min(88vw,320px)]
+        shrink-0 flex-col border-r border-(--border) bg-(--card)
+        md:relative md:flex md:w-72
+      `}>
+        {/* header */}
+        <div className="flex items-center justify-between border-b border-(--border) px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-(--foreground)">Todos</span>
+            <ChevronDown size={14} className="text-(--muted-foreground)" />
+          </div>
+          <div className="flex items-center gap-1">
+            <button className="rounded-lg p-1.5 text-(--muted-foreground) hover:bg-(--hoverbg) cursor-pointer" aria-label="Pesquisar">
+              <Search size={16} />
+            </button>
+            <button className="rounded-lg p-1.5 text-(--muted-foreground) hover:bg-(--hoverbg) cursor-pointer" aria-label="Mais opções">
+              <MoreHorizontal size={16} />
+            </button>
+            <button onClick={() => setMobileList(false)} className="rounded-lg p-1.5 text-(--muted-foreground) hover:bg-(--hoverbg) md:hidden cursor-pointer" aria-label="Fechar">
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* busca */}
+        <div className="px-3 py-2">
+          <div className="flex items-center gap-2 rounded-xl border border-(--border) bg-(--background) px-3 py-2 text-(--muted-foreground)">
+            <Search size={14} />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar conversa..."
+              className="min-w-0 flex-1 bg-transparent text-sm text-(--foreground) outline-none placeholder:text-(--muted-foreground)"
+            />
+          </div>
+        </div>
+
+        {/* lista */}
+        <div className="flex-1 overflow-y-auto">
+          {filtered.map((conv) => (
+            <button
+              key={conv.id}
+              onClick={() => { setSelectedId(conv.id); setMobileList(false); }}
+              className={`flex w-full items-center gap-3 border-b border-(--border)/50 px-4 py-3.5 text-left transition cursor-pointer
+                ${selectedId === conv.id ? "bg-(--primary)/8 border-l-2 border-l-(--primary)" : "hover:bg-(--hoverbg)"}`}
+            >
+              <AvatarDot conv={conv} />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center justify-between gap-1">
+                  <strong className={`truncate text-sm ${selectedId === conv.id ? "text-(--primary)" : "text-(--foreground)"}`}>
+                    {conv.name}
+                  </strong>
+                  <small className="shrink-0 text-[11px] text-(--muted-foreground)">{conv.time}</small>
+                </span>
+                <span className="mt-0.5 flex items-center justify-between gap-1">
+                  <span className="truncate text-xs text-(--muted-foreground)">{conv.preview}</span>
+                  {conv.unread && selectedId !== conv.id ? (
+                    <span className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-(--primary) px-1 text-[9px] font-bold text-white">
+                      {conv.unread}
+                    </span>
+                  ) : (
+                    <CheckCheck size={12} className="shrink-0 text-(--primary)" />
+                  )}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      {/* ── PAINEL 3: chat ───────────────────────────────── */}
+      <section className="flex min-w-0 flex-1 flex-col bg-(--background)">
+
+        {/* header do chat */}
+        <header className="flex items-center justify-between border-b border-(--border) bg-(--card) px-5 py-3.5">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileList(true)}
+              className="rounded-lg p-1.5 text-(--muted-foreground) hover:bg-(--hoverbg) md:hidden cursor-pointer"
+              aria-label="Abrir lista"
+            >
+              <Menu size={20} />
+            </button>
+            <AvatarDot conv={selected} large />
+            <div>
+              <h2 className="text-sm font-semibold text-(--foreground)">{selected.name}</h2>
+              <p className="text-xs text-(--muted-foreground)">{selected.email}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-(--muted-foreground)">
+            <button className="rounded-xl p-2 hover:bg-(--hoverbg) cursor-pointer" aria-label="Pesquisar"><Search size={17} /></button>
+            <button className="rounded-xl p-2 hover:bg-(--hoverbg) cursor-pointer" aria-label="Favoritar"><Star size={17} /></button>
+            <button className="rounded-xl p-2 hover:bg-(--hoverbg) cursor-pointer" aria-label="Mais opções"><MoreHorizontal size={18} /></button>
+          </div>
+        </header>
+
+        {/* mensagens */}
+        <div className="flex-1 space-y-1 overflow-y-auto px-6 py-5">
+          {messages.map((msg, i) => {
+            const showDate = msg.date && (i === 0 || messages[i - 1]?.date !== msg.date);
+            const showAvatar = !msg.mine && (i === 0 || messages[i - 1]?.mine);
+            return (
+              <div key={msg.id}>
+                {showDate && (
+                  <div className="my-4 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-(--border)" />
+                    <span className="text-xs text-(--muted-foreground)">{msg.date}</span>
+                    <div className="h-px flex-1 bg-(--border)" />
+                  </div>
+                )}
+                <div className={`flex items-end gap-2.5 ${msg.mine ? "justify-end" : "justify-start"}`}>
+                  {!msg.mine && (
+                    <div className={`${showAvatar ? "opacity-100" : "opacity-0"} grid h-8 w-8 shrink-0 place-items-center rounded-full bg-(--primary) text-[10px] font-bold text-white`}>
+                      CN
+                    </div>
+                  )}
+                  <div className={`group max-w-[min(72%,480px)]`}>
+                    {!msg.mine && showAvatar && (
+                      <p className="mb-1 text-xs font-medium text-(--muted-foreground)">Camila Nuvio</p>
+                    )}
+                    <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm
+                      ${msg.mine
+                        ? "rounded-br-sm bg-(--primary) text-white"
+                        : "rounded-bl-sm border border-(--border) bg-(--card) text-(--foreground)"
+                      }`}
+                    >
+                      <p>{msg.text}</p>
+                    </div>
+                    <div className={`mt-1 flex items-center gap-1 text-[10px] text-(--muted-foreground) ${msg.mine ? "justify-end" : "justify-start"}`}>
+                      <span>{msg.time}</span>
+                      {msg.mine && msg.status === "read" && <CheckCheck size={11} className="text-(--primary)" />}
+                      {msg.mine && msg.status === "delivered" && <CheckCheck size={11} />}
+                    </div>
+                  </div>
+                  {msg.mine && (
+                    <div
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[10px] font-bold"
+                      style={{ backgroundColor: selected.color, color: "#3d251b" }}
+                    >
+                      {selected.initials}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* typing indicator */}
+          {typing && (
+            <div className="flex items-end gap-2.5">
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-(--primary) text-[10px] font-bold text-white">CN</div>
+              <div className="rounded-2xl rounded-bl-sm border border-(--border) bg-(--card) px-4 py-3">
+                <div className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-(--muted-foreground)" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-(--muted-foreground) [animation-delay:120ms]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-(--muted-foreground) [animation-delay:240ms]" />
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* input */}
+        <div className="border-t border-(--border) bg-(--card) px-5 py-4">
+          <form onSubmit={submit}>
+            <div className="rounded-2xl border border-(--border) bg-(--background) focus-within:border-(--primary) focus-within:ring-2 focus-within:ring-(--primary)/20 transition">
+              <div className="flex items-center gap-2 px-4 py-3">
+                <input
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Escrever uma mensagem..."
+                  className="min-w-0 flex-1 bg-transparent text-sm text-(--foreground) outline-none placeholder:text-(--muted-foreground)"
+                />
+                <button
+                  type="button"
+                  className="shrink-0 rounded-lg p-1.5 text-(--muted-foreground) hover:bg-(--hoverbg) hover:text-(--foreground) transition cursor-pointer"
+                  aria-label="Emoji"
+                >
+                  <Smile size={18} />
+                </button>
+                <button
+                  type="submit"
+                  disabled={!message.trim()}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-(--primary) text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                  aria-label="Enviar"
+                >
+                  <Send size={15} />
+                </button>
+              </div>
+
+              {/* toolbar */}
+              <div className="flex items-center gap-0.5 border-t border-(--border) px-3 py-2">
+                <ToolbarBtn icon={<Bold size={14} />}      label="Negrito" />
+                <ToolbarBtn icon={<List size={14} />}      label="Lista" />
+                <ToolbarBtn icon={<Link2 size={14} />}     label="Link" />
+                <ToolbarBtn icon={<Paperclip size={14} />} label="Anexo" />
+                <ToolbarBtn icon={<ImageIcon size={14} />} label="Imagem" />
+                <ToolbarBtn icon={<FileText size={14} />}  label="Arquivo" />
+              </div>
+            </div>
+          </form>
+        </div>
+      </section>
     </div>
   );
 }
 
-function RailButton({ icon, active = false }: { icon: React.ReactNode; active?: boolean }) { return <button className={`grid h-10 w-10 place-items-center rounded-xl transition ${active ? "bg-[#2fae5a] text-white shadow-lg shadow-[#2fae5a]/20" : "hover:bg-white/10"}`}>{icon}</button>; }
+/* ─── helpers ────────────────────────────────────────────── */
+function AvatarDot({ conv, large = false }: { conv: Conversation; large?: boolean }) {
+  return (
+    <span className={`relative shrink-0 grid place-items-center rounded-full font-semibold
+      ${large ? "h-9 w-9 text-[11px]" : "h-9 w-9 text-[11px]"}`}
+      style={{ backgroundColor: conv.color, color: "#3d251b" }}
+    >
+      {conv.initials}
+      {conv.online && (
+        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-(--card) bg-emerald-500" />
+      )}
+    </span>
+  );
+}
 
-function Avatar({ conversation, large = false }: { conversation: Conversation; large?: boolean }) { return <span className={`relative grid shrink-0 place-items-center rounded-full font-semibold text-[#173020] ${large ? "h-11 w-11 text-xs" : "h-10 w-10 text-[11px]"}`} style={{ backgroundColor: conversation.color }}>{conversation.initials}<span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#12291c] ${conversation.online ? "bg-[#73e891]" : "bg-white/30"}`} /></span>; }
+function ToolbarBtn({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      className="rounded-lg p-1.5 text-(--muted-foreground) hover:bg-(--hoverbg) hover:text-(--foreground) transition cursor-pointer"
+    >
+      {icon}
+    </button>
+  );
+}
