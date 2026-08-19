@@ -25,64 +25,79 @@ class UploadController extends BaseController
      */
     public function uploadFotoPerfil(int $idUsuario): void
     {
-        $file = $_FILES['foto'] ?? $_FILES['arquivo'] ?? $_FILES['image'] ?? null;
+        try {
+            $file = $_FILES['foto'] ?? $_FILES['arquivo'] ?? $_FILES['image'] ?? null;
 
-        if (!$file) {
-            $this->respond([
-                'sucesso' => false,
-                'erro' => 'Nenhum arquivo de imagem foi enviado. Envie o arquivo no campo "foto".'
-            ], 400);
-            return;
-        }
-
-        // Busca dados atuais do usuário para remover avatar anterior se for local
-        $usuarioAtual = $this->usuario->buscarPorId($idUsuario);
-        if (!$usuarioAtual) {
-            $this->respond([
-                'sucesso' => false,
-                'erro' => 'Usuário não encontrado.'
-            ], 404);
-            return;
-        }
-
-        $resultado = $this->storage->salvarFotoPerfil($file, $idUsuario);
-
-        if (!$resultado['sucesso']) {
-            $this->respond([
-                'sucesso' => false,
-                'erro' => $resultado['erro']
-            ], 400);
-            return;
-        }
-
-        $caminhoNovo = $resultado['caminho'];
-        $urlPublica = $resultado['url'];
-
-        // Atualiza apenas a foto no banco de dados MySQL
-        if ($this->usuario->updateFotoPerfil($idUsuario, $caminhoNovo)) {
-            // Remove avatar antigo local se existir
-            $fotoAntiga = $usuarioAtual['fotoPerfil'] ?? $usuarioAtual['fotoperfil'] ?? '';
-            if ($fotoAntiga && str_starts_with($fotoAntiga, '/uploads/avatars/')) {
-                $this->storage->removerArquivo($fotoAntiga);
+            if (!$file) {
+                $this->respond([
+                    'sucesso' => false,
+                    'erro' => 'Nenhum arquivo de imagem foi enviado. Envie o arquivo no campo "foto".',
+                    'debug_files' => array_keys($_FILES),
+                ], 400);
+                return;
             }
 
+            // Busca dados atuais do usuário
+            $usuarioAtual = $this->usuario->buscarPorId($idUsuario);
+            if (!$usuarioAtual) {
+                $this->respond([
+                    'sucesso' => false,
+                    'erro' => 'Usuário não encontrado.',
+                    'debug_id' => $idUsuario,
+                ], 404);
+                return;
+            }
+
+            $resultado = $this->storage->salvarFotoPerfil($file, $idUsuario);
+
+            if (!$resultado['sucesso']) {
+                $this->respond([
+                    'sucesso' => false,
+                    'erro' => $resultado['erro'],
+                    'debug_file_error' => $file['error'] ?? 'n/a',
+                    'debug_tmp' => $file['tmp_name'] ?? 'n/a',
+                    'debug_size' => $file['size'] ?? 'n/a',
+                ], 400);
+                return;
+            }
+
+            $caminhoNovo = $resultado['caminho'];
+            $urlPublica  = $resultado['url'];
+
+            // Atualiza apenas a foto no banco de dados
+            if ($this->usuario->updateFotoPerfil($idUsuario, $caminhoNovo)) {
+                // Remove avatar local anterior se existir
+                $fotoAntiga = $usuarioAtual['fotoPerfil'] ?? $usuarioAtual['fotoperfil'] ?? '';
+                if ($fotoAntiga && str_starts_with($fotoAntiga, '/uploads/avatars/')) {
+                    $this->storage->removerArquivo($fotoAntiga);
+                }
+
+                $this->respond([
+                    'sucesso' => true,
+                    'mensagem' => 'Foto de perfil atualizada com sucesso!',
+                    'url'       => $urlPublica,
+                    'caminho'   => $caminhoNovo,
+                    'fotoPerfil' => $caminhoNovo,
+                ], 200);
+                return;
+            }
+
+            // Se falhou ao gravar no banco, remove o arquivo recém-salvo
+            $this->storage->removerArquivo($caminhoNovo);
+
             $this->respond([
-                'sucesso' => true,
-                'mensagem' => 'Foto de perfil atualizada com sucesso no bucket!',
-                'url' => $urlPublica,
-                'caminho' => $caminhoNovo,
-                'fotoPerfil' => $caminhoNovo,
-            ], 200);
-            return;
+                'sucesso' => false,
+                'erro' => 'Não foi possível salvar o registro da foto no banco de dados.',
+            ], 500);
+
+        } catch (\Throwable $e) {
+            $this->respond([
+                'sucesso' => false,
+                'erro'    => 'Erro interno no upload: ' . $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ], 500);
         }
-
-        // Se falhou ao gravar no banco, remove o arquivo recém-salvo
-        $this->storage->removerArquivo($caminhoNovo);
-
-        $this->respond([
-            'sucesso' => false,
-            'erro' => 'Não foi possível salvar o registro da foto no banco de dados.'
-        ], 500);
     }
 
     /**
