@@ -1,0 +1,136 @@
+<?php
+
+require_once __DIR__ . '/BaseController.php';
+require_once __DIR__ . '/../models/usuario.php';
+require_once __DIR__ . '/../services/EmailService.php';
+
+class ClienteController extends BaseController
+{
+    private Usuario $usuario;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->usuario = new Usuario($this->db);
+    }
+
+    public function store(): void
+    {
+        $body = $this->body();
+        $nome = $this->texto($body['nome'] ?? '', 85);
+        $sobrenome = $this->texto($body['sobrenome'] ?? '', 85);
+        $email = strtolower($this->texto($body['email'] ?? '', 100));
+
+        if ($nome === '' || $email === '') {
+            $this->respond(['erro' => 'Nome e e-mail são obrigatórios.'], 422);
+            return;
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->respond(['erro' => 'Informe um e-mail válido.'], 422);
+            return;
+        }
+        if ($this->usuario->emailExiste($email)) {
+            $this->respond(['erro' => 'Já existe um cliente cadastrado com este e-mail.'], 409);
+            return;
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $tipoCliente = $this->db->query(
+                "SELECT idtipoUsuario FROM tipoUsuario WHERE descricao = 'Cliente' LIMIT 1"
+            )->fetchColumn();
+            if (!$tipoCliente) {
+                throw new RuntimeException('O tipo de usuário Cliente não foi configurado.');
+            }
+
+            $this->usuario->idtipoUsuario = (int) $tipoCliente;
+            $this->usuario->nome = $this->texto(trim($nome . ' ' . $sobrenome), 85);
+            $this->usuario->email = $email;
+            // O contato não recebe uma senha por esta tela. Um valor aleatório impede login
+            // até que um fluxo próprio de ativação/redefinição de senha seja concluído.
+            $this->usuario->senhaHash = password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
+            $this->usuario->cargo = $this->texto($body['cargo'] ?? '', 55);
+            $this->usuario->setor = $this->texto($body['empresa'] ?? '', 55);
+            $this->usuario->telefone = $this->texto($body['telefone'] ?? '', 25);
+
+            if (!$this->usuario->create()) {
+                throw new RuntimeException('Não foi possível criar o usuário do cliente.');
+            }
+
+            $preferencias = [
+                'sobrenome' => $sobrenome,
+                'empresa' => $this->texto($body['empresa'] ?? '', 120),
+                'site' => $this->texto($body['site'] ?? '', 255),
+                'idioma' => $this->texto($body['idioma'] ?? 'Português (BR)', 50),
+                'timezone' => $this->texto($body['timezone'] ?? 'America/Sao_Paulo (UTC -3)', 80),
+                'observacoes' => $this->texto($body['observacoes'] ?? '', 65535),
+                'emailBoasVindas' => $this->booleano($body['emailBoasVindas'] ?? true),
+                'verificado' => $this->booleano($body['verificado'] ?? false),
+                'inscrito' => $this->booleano($body['inscrito'] ?? true),
+            ];
+
+            $perfil = $this->db->prepare(
+                'INSERT INTO ClientePerfil
+                    (idUsuario, sobrenome, empresa, site, idioma, timezone, observacoes, emailBoasVindas, verificado, inscrito)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $perfil->execute([
+                $this->usuario->idUsuario,
+                $preferencias['sobrenome'], $preferencias['empresa'], $preferencias['site'],
+                $preferencias['idioma'], $preferencias['timezone'], $preferencias['observacoes'],
+                $preferencias['emailBoasVindas'], $preferencias['verificado'], $preferencias['inscrito'],
+            ]);
+
+            $this->salvarTags($this->usuario->idUsuario, $body['tags'] ?? []);
+            $this->db->commit();
+
+            $emailEnviado = false;
+            if ($preferencias['emailBoasVindas']) {
+                $emailEnviado = (new EmailService())->enviarBoasVindasCliente($email, $this->usuario->nome);
+            }
+
+            $this->respond([
+                'mensagem' => 'Cliente cadastrado com sucesso.',
+                'idUsuario' => (int) $this->usuario->idUsuario,
+                'emailBoasVindasEnviado' => $emailEnviado,
+            ], 201);
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            $mensagem = $e instanceof PDOException
+                ? 'Não foi possível salvar o perfil do cliente. Execute a migration_clientes.sql e tente novamente.'
+                : 'Não foi possível cadastrar o cliente.';
+            $this->respond(['erro' => $mensagem], 500);
+        }
+    }
+
+    private function salvarTags(int $idUsuario, $tags): void
+    {
+        if (!is_array($tags)) return;
+
+        $inserirTag = $this->db->prepare('INSERT IGNORE INTO ClienteTag (nome) VALUES (?)');
+        $buscarTag = $this->db->prepare('SELECT idClienteTag FROM ClienteTag WHERE nome = ? LIMIT 1');
+        $vincular = $this->db->prepare('INSERT IGNORE INTO ClientePerfilTag (idUsuario, idClienteTag) VALUES (?, ?)');
+
+        foreach (array_unique($tags) as $tag) {
+            $nome = $this->texto($tag, 50);
+            if ($nome === '') continue;
+            $inserirTag->execute([$nome]);
+            $buscarTag->execute([$nome]);
+            $idTag = $buscarTag->fetchColumn();
+            if ($idTag) $vincular->execute([$idUsuario, $idTag]);
+        }
+    }
+
+    private function texto($valor, int $limite): string
+    {
+        return mb_substr(trim(is_scalar($valor) ? (string) $valor : ''), 0, $limite);
+    }
+
+    private function booleano($valor): int
+    {
+        return filter_var($valor, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+    }
+}

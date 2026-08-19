@@ -1,14 +1,20 @@
 // app/admin/clientes/novo/page.tsx
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DM_Sans } from "next/font/google";
+import { apiFetch } from "@/lib/api";
 
 const dmSans = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500"] });
 
 export default function NovoClientePage() {
-  const [tags, setTags] = useState<string[]>(["VIP"]);
+  const router = useRouter();
+  const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
+  const [sucesso, setSucesso] = useState("");
   const [form, setForm] = useState({
     nome: "",
     sobrenome: "",
@@ -45,9 +51,38 @@ export default function NovoClientePage() {
     setTags((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function handleSubmit() {
-    console.log({ ...form, tags });
-    // chamar sua action/API aqui
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErro("");
+    setSucesso("");
+
+    if (!form.nome.trim() || !form.email.trim()) {
+      setErro("Preencha nome e e-mail para cadastrar o cliente.");
+      return;
+    }
+
+    setEnviando(true);
+    try {
+      const resposta = await apiFetch<{ mensagem: string; emailBoasVindasEnviado: boolean }>("/clientes", {
+        method: "POST",
+        body: JSON.stringify({ ...form, tags }),
+      });
+      setSucesso(
+        resposta.emailBoasVindasEnviado
+          ? "Cliente cadastrado e e-mail de boas-vindas enviado."
+          : "Cliente cadastrado com sucesso."
+      );
+      setForm({
+        nome: "", sobrenome: "", email: "", telefone: "", cargo: "", empresa: "", site: "",
+        idioma: "Português (BR)", timezone: "America/Sao_Paulo (UTC -3)", observacoes: "",
+        emailBoasVindas: true, verificado: false, inscrito: true,
+      });
+      setTags([]);
+    } catch (causa) {
+      setErro(causa instanceof Error ? causa.message : "Não foi possível cadastrar o cliente.");
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -55,7 +90,7 @@ export default function NovoClientePage() {
       <div className="max-w-2xl mx-auto">
 
         {/* CARD */}
-        <div className="bg-(--admin-card) border border-(--admin-card-border) rounded-2xl overflow-hidden">
+        <form onSubmit={handleSubmit} className="bg-(--admin-card) border border-(--admin-card-border) rounded-2xl overflow-hidden">
 
           {/* HEADER */}
           <div className="flex items-center gap-3 px-6 py-5 border-b border-(--border)">
@@ -76,6 +111,8 @@ export default function NovoClientePage() {
 
           {/* BODY */}
           <div className="p-6 space-y-6">
+            {erro && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-600">{erro}</p>}
+            {sucesso && <p role="status" className="rounded-xl border border-[#2fae5a]/30 bg-[#eaf3de] px-3 py-2 text-[13px] text-[#3b6d11]">{sucesso}</p>}
 
             {/* INFORMAÇÕES PESSOAIS */}
             <section>
@@ -209,24 +246,25 @@ export default function NovoClientePage() {
             <div className="flex gap-2">
               <button
                 type="button"
+                onClick={() => router.push("/admin/dashboard")}
                 className="h-[34px] px-4 text-[13px] text-(--muted-foreground) bg-transparent border border-(--border) rounded-xl hover:bg-(--muted) transition-colors"
               >
                 Cancelar
               </button>
               <button
-                type="button"
-                onClick={handleSubmit}
+                type="submit"
+                disabled={enviando}
                 className="h-[34px] px-5 text-[13px] font-medium text-white bg-[#0f6b2e] rounded-xl hover:bg-[#2fae5a] transition-colors flex items-center gap-1.5"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
-                Cadastrar cliente
+                {enviando ? "Cadastrando..." : "Cadastrar cliente"}
               </button>
             </div>
           </div>
 
-        </div>
+        </form>
       </div>
     </div>
   );

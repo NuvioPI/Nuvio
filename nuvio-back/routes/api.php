@@ -18,6 +18,7 @@ require_once __DIR__ . '/../controllers/CategoriaController.php';
 require_once __DIR__ . '/../controllers/SlaController.php';
 require_once __DIR__ . '/../controllers/RespostaTicketController.php';
 require_once __DIR__ . '/../controllers/UsuarioController.php';
+require_once __DIR__ . '/../controllers/ClienteController.php';
 require_once __DIR__ . '/../controllers/TecnicoController.php';
 require_once __DIR__ . '/../controllers/AdministradorController.php';
 require_once __DIR__ . '/../controllers/AnexoController.php';
@@ -158,6 +159,20 @@ $recurso  = $uriParts[0] ?? '';
 $segmentoId = $uriParts[1] ?? null;
 $id       = $segmentoId !== null && is_numeric($segmentoId) ? (int)$segmentoId : null;
 $subrecurso = $uriParts[2] ?? null;
+
+// --- Clientes ---
+if ($recurso === 'clientes') {
+    autenticarEAutorizar(['Administrador']);
+
+    $controller = new ClienteController();
+    if ($method === 'POST' && !$id) {
+        $controller->store();
+    } else {
+        http_response_code(405);
+        echo json_encode(['erro' => 'Método não permitido.']);
+    }
+    exit();
+}
 
 // --- Tickets ---
 if ($recurso === 'tickets') {
