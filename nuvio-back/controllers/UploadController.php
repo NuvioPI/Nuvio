@@ -32,7 +32,6 @@ class UploadController extends BaseController
                 $this->respond([
                     'sucesso' => false,
                     'erro' => 'Nenhum arquivo de imagem foi enviado. Envie o arquivo no campo "foto".',
-                    'debug_files' => array_keys($_FILES),
                 ], 400);
                 return;
             }
@@ -43,7 +42,6 @@ class UploadController extends BaseController
                 $this->respond([
                     'sucesso' => false,
                     'erro' => 'Usuário não encontrado.',
-                    'debug_id' => $idUsuario,
                 ], 404);
                 return;
             }
@@ -54,9 +52,6 @@ class UploadController extends BaseController
                 $this->respond([
                     'sucesso' => false,
                     'erro' => $resultado['erro'],
-                    'debug_file_error' => $file['error'] ?? 'n/a',
-                    'debug_tmp' => $file['tmp_name'] ?? 'n/a',
-                    'debug_size' => $file['size'] ?? 'n/a',
                 ], 400);
                 return;
             }

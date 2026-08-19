@@ -160,9 +160,9 @@ export default function PerfilPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validação básica de tamanho (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setMensagemErro("A imagem selecionada é maior que 10MB.");
+    // Validação básica de tamanho (2MB — armazenado como Base64 no banco)
+    if (file.size > 2 * 1024 * 1024) {
+      setMensagemErro("A imagem selecionada é maior que 2MB.");
       return;
     }
 
@@ -383,13 +383,22 @@ export default function PerfilPage() {
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left">
               <div className="relative group">
                 <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-full ring-4 ring-(--card) shadow-xl overflow-hidden bg-(--muted)">
-                  <Image
-                    src={fotoResolvida}
-                    alt={usuario?.nome || "Foto de Perfil"}
-                    fill
-                    sizes="128px"
-                    className="object-cover transition duration-300 group-hover:scale-105"
-                  />
+                  {fotoResolvida.startsWith("data:") ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={fotoResolvida}
+                      alt={usuario?.nome || "Foto de Perfil"}
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <Image
+                      src={fotoResolvida}
+                      alt={usuario?.nome || "Foto de Perfil"}
+                      fill
+                      sizes="128px"
+                      className="object-cover transition duration-300 group-hover:scale-105"
+                    />
+                  )}
                   {uploadandoFoto && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-xs text-white">
                       <Loader2 className="h-7 w-7 animate-spin" />
@@ -755,7 +764,7 @@ export default function PerfilPage() {
                   Clique para carregar uma nova foto
                 </p>
                 <p className="mt-1 text-[11px] text-(--muted-foreground)">
-                  JPG, PNG, WEBP ou GIF (até 10MB)
+                  JPG, PNG, WEBP ou GIF (até 2MB)
                 </p>
               </div>
             </div>
@@ -886,13 +895,22 @@ export default function PerfilPage() {
               </label>
               <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-2xl bg-(--muted)/30 border border-(--border)">
                 <div className="relative h-20 w-20 rounded-full overflow-hidden ring-2 ring-(--primary) bg-(--muted) shrink-0">
-                  <Image
-                    src={fotoResolvida}
-                    alt="Preview"
-                    fill
-                    sizes="80px"
-                    className="object-cover"
-                  />
+                  {fotoResolvida.startsWith("data:") ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={fotoResolvida}
+                      alt="Preview"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Image
+                      src={fotoResolvida}
+                      alt="Preview"
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                    />
+                  )}
                   {uploadandoFoto && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white">
                       <Loader2 className="h-6 w-6 animate-spin" />

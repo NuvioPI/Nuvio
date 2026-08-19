@@ -36,7 +36,8 @@ class StorageService
     }
 
     /**
-     * Salva uma foto de perfil no bucket de avatares
+     * Salva uma foto de perfil como Base64 no banco (sem depender de disco).
+     * Compatível com Render (filesystem efêmero) + Aiven MySQL (MEDIUMTEXT).
      *
      * @param array $file $_FILES['foto']
      * @param int|null $idUsuario
@@ -51,12 +52,12 @@ class StorageService
             ];
         }
 
-        // Limite de 10MB para imagens
-        $maxTamanho = 10 * 1024 * 1024;
+        // Limite de 2MB para Base64 (fica ~2.7MB no banco — dentro do MEDIUMTEXT 16MB)
+        $maxTamanho = 2 * 1024 * 1024;
         if ($file['size'] > $maxTamanho) {
             return [
                 'sucesso' => false,
-                'erro' => 'A imagem excede o tamanho máximo permitido de 10MB.'
+                'erro' => 'A imagem excede o tamanho máximo de 2MB para armazenamento no banco.'
             ];
         }
 
@@ -68,9 +69,9 @@ class StorageService
             ];
         }
 
-        // Validação rigorosa de MIME Type
+        // Validação de MIME Type via finfo
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime = finfo_file($finfo, $file['tmp_name']);
+        $mime  = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
 
         if (!in_array($mime, $this->mimesImagem, true)) {
@@ -80,31 +81,18 @@ class StorageService
             ];
         }
 
-        // Nome único e seguro para o bucket
-        $sufixo = bin2hex(random_bytes(6));
-        $prefixo = $idUsuario ? "usr_{$idUsuario}_" : "avatar_";
-        $nomeArquivo = $prefixo . time() . "_{$sufixo}." . $extensao;
-
-        $destinoLocal = $this->avatarsDir . '/' . $nomeArquivo;
-
-        if (!move_uploaded_file($file['tmp_name'], $destinoLocal)) {
-            return [
-                'sucesso' => false,
-                'erro' => 'Falha ao salvar a imagem no bucket local.'
-            ];
-        }
-
-        // Caminho relativo a partir de public
-        $caminhoRelativo = '/uploads/avatars/' . $nomeArquivo;
-        $urlPublica = $this->baseUrl . $caminhoRelativo;
+        // Lê os bytes e converte para data URI (armazenado no banco, servido direto pelo frontend)
+        $bytes   = file_get_contents($file['tmp_name']);
+        $base64  = base64_encode($bytes);
+        $dataUri = "data:{$mime};base64,{$base64}";
 
         return [
-            'sucesso' => true,
-            'url' => $urlPublica,
-            'caminho' => $caminhoRelativo,
-            'nomeArquivo' => $nomeArquivo,
-            'tamanho' => $file['size'],
-            'mime' => $mime,
+            'sucesso'     => true,
+            'url'         => $dataUri,
+            'caminho'     => $dataUri,   // "caminho" salvo no banco é a própria data URI
+            'nomeArquivo' => $file['name'],
+            'tamanho'     => $file['size'],
+            'mime'        => $mime,
         ];
     }
 

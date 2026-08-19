@@ -85,35 +85,39 @@ class Usuario
 
     public function criar()
     {
-        $stmt = $this->db->prepare(
-            "INSERT INTO Usuario (idtipoUsuario, nome, email, senhaHash, cargo, setor, telefone, fotoPerfil)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-        );
-        try {
-            $result = $stmt->execute([
-                $this->idtipoUsuario,
-                $this->nome,
-                $this->email,
-                $this->senhaHash,
-                $this->cargo,
-                $this->setor,
-                $this->telefone,
-                $this->fotoPerfil
-            ]);
-        } catch (PDOException $e) {
-            $stmtFallback = $this->db->prepare(
-                "INSERT INTO Usuario (idtipoUsuario, nome, email, senhaHash, cargo, setor)
-                 VALUES (?, ?, ?, ?, ?, ?)"
+        $colunas = $this->colunasExistentes();
+        $temTelefone  = in_array('telefone', $colunas);
+        $temFotoPerfil = in_array('fotoPerfil', $colunas);
+
+        if ($temTelefone && $temFotoPerfil) {
+            $stmt = $this->db->prepare(
+                'INSERT INTO Usuario (idtipoUsuario, nome, email, senhaHash, cargo, setor, telefone, fotoPerfil)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
             );
-            $result = $stmtFallback->execute([
-                $this->idtipoUsuario,
-                $this->nome,
-                $this->email,
-                $this->senhaHash,
-                $this->cargo,
-                $this->setor
+            $result = $stmt->execute([
+                $this->idtipoUsuario, $this->nome, $this->email, $this->senhaHash,
+                $this->cargo, $this->setor, $this->telefone, $this->fotoPerfil,
+            ]);
+        } elseif ($temTelefone) {
+            $stmt = $this->db->prepare(
+                'INSERT INTO Usuario (idtipoUsuario, nome, email, senhaHash, cargo, setor, telefone)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+            );
+            $result = $stmt->execute([
+                $this->idtipoUsuario, $this->nome, $this->email, $this->senhaHash,
+                $this->cargo, $this->setor, $this->telefone,
+            ]);
+        } else {
+            $stmt = $this->db->prepare(
+                'INSERT INTO Usuario (idtipoUsuario, nome, email, senhaHash, cargo, setor)
+                 VALUES (?, ?, ?, ?, ?, ?)'
+            );
+            $result = $stmt->execute([
+                $this->idtipoUsuario, $this->nome, $this->email, $this->senhaHash,
+                $this->cargo, $this->setor,
             ]);
         }
+
         if ($result) {
             $this->idUsuario = (int) $this->db->lastInsertId();
         }
@@ -122,28 +126,20 @@ class Usuario
 
     public function getAll()
     {
+        $colunas = $this->colunasExistentes();
+        $extras  = '';
+        if (in_array('telefone', $colunas))   $extras .= ', u.telefone';
+        if (in_array('fotoPerfil', $colunas)) $extras .= ', u.fotoPerfil';
+
         $stmt = $this->db->prepare(
-            'SELECT u.idUsuario, u.idtipoUsuario, u.nome, u.email, u.cargo, u.setor,
-                    u.telefone, u.fotoPerfil, u.dataCadastro,
+            "SELECT u.idUsuario, u.idtipoUsuario, u.nome, u.email, u.cargo, u.setor{$extras}, u.dataCadastro,
                     tu.descricao AS tipo
              FROM Usuario u
              LEFT JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
-             ORDER BY u.nome ASC'
+             ORDER BY u.nome ASC"
         );
-        try {
-            $stmt->execute();
-            return $stmt;
-        } catch (PDOException $e) {
-            $stmtFallback = $this->db->prepare(
-                'SELECT u.idUsuario, u.idtipoUsuario, u.nome, u.email, u.cargo, u.setor,
-                        tu.descricao AS tipo
-                 FROM Usuario u
-                 LEFT JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
-                 ORDER BY u.nome ASC'
-            );
-            $stmtFallback->execute();
-            return $stmtFallback;
-        }
+        $stmt->execute();
+        return $stmt;
     }
 
     public function find($id)
@@ -169,36 +165,43 @@ class Usuario
 
     public function update()
     {
-        $stmt = $this->db->prepare(
-            'UPDATE Usuario
-             SET nome = ?, email = ?, cargo = ?, setor = ?, telefone = ?, fotoPerfil = ?
-             WHERE idUsuario = ?'
-        );
+        // Detecta quais colunas opcionais existem na tabela antes de atualizar.
+        // Isso evita erros 500 em bancos que ainda não tenham telefone / fotoPerfil.
+        $colunas = $this->colunasExistentes();
 
-        try {
-            return $stmt->execute([
-                $this->nome,
-                $this->email,
-                $this->cargo,
-                $this->setor,
-                $this->telefone,
-                $this->fotoPerfil,
-                (int) $this->idUsuario,
-            ]);
-        } catch (PDOException $e) {
-            $stmtFallback = $this->db->prepare(
-                'UPDATE Usuario
-                 SET nome = ?, email = ?, cargo = ?, setor = ?
-                 WHERE idUsuario = ?'
-            );
-            return $stmtFallback->execute([
-                $this->nome,
-                $this->email,
-                $this->cargo,
-                $this->setor,
-                (int) $this->idUsuario,
-            ]);
+        $sets   = ['nome = ?', 'email = ?', 'cargo = ?', 'setor = ?'];
+        $params = [$this->nome, $this->email, $this->cargo, $this->setor];
+
+        if (in_array('telefone', $colunas)) {
+            $sets[]   = 'telefone = ?';
+            $params[] = $this->telefone;
         }
+        if (in_array('fotoPerfil', $colunas)) {
+            $sets[]   = 'fotoPerfil = ?';
+            $params[] = $this->fotoPerfil;
+        }
+
+        $params[] = (int) $this->idUsuario;
+
+        $sql  = 'UPDATE Usuario SET ' . implode(', ', $sets) . ' WHERE idUsuario = ?';
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
+    }
+
+    /** Retorna lista dos nomes de colunas da tabela Usuario (cache por request). */
+    private ?array $colunasCached = null;
+    private function colunasExistentes(): array
+    {
+        if ($this->colunasCached !== null) {
+            return $this->colunasCached;
+        }
+        try {
+            $stmt = $this->db->query('SHOW COLUMNS FROM Usuario');
+            $this->colunasCached = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
+        } catch (PDOException $e) {
+            $this->colunasCached = ['nome', 'email', 'cargo', 'setor'];
+        }
+        return $this->colunasCached;
     }
 
     public function updateSenha($senhaHash)
@@ -209,21 +212,18 @@ class Usuario
 
     public function updateFotoPerfil(int $idUsuario, string $caminho): bool
     {
-        // Tenta primeiro com o nome camelCase, depois com minúsculo
-        // (bancos case-sensitive como Aiven MySQL usam o nome original da migration)
-        foreach (['fotoPerfil', 'fotoperfil'] as $coluna) {
-            try {
-                $stmt = $this->db->prepare("UPDATE Usuario SET {$coluna} = ? WHERE idUsuario = ?");
-                $resultado = $stmt->execute([$caminho, $idUsuario]);
-                if ($resultado) {
-                    return true;
-                }
-            } catch (PDOException $e) {
-                // Tenta a próxima variação
-                continue;
-            }
+        $colunas = $this->colunasExistentes();
+        if (!in_array('fotoPerfil', $colunas)) {
+            // Coluna ainda não existe no banco — não há o que atualizar
+            return false;
         }
-        return false;
+        try {
+            $stmt = $this->db->prepare('UPDATE Usuario SET fotoPerfil = ? WHERE idUsuario = ?');
+            $stmt->execute([$caminho, $idUsuario]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            return false;
+        }
     }
 
     public function delete()

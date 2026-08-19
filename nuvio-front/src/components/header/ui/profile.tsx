@@ -96,23 +96,32 @@ export function Profile() {
                 "
                 />
 
-                <Image
-                    className="
-                    rounded-full
-                    object-cover
-                    outline-2
-                    outline-offset-2
-                    outline-(--online)
-                    active:outline-3
-                    transition-all
-                    duration-300
-                    ease-in-out
-                "
-                    src={foto ?? "/balls.jpeg"}
-                    alt="Foto de Perfil"
-                    width={40}
-                    height={40}
-                />
+                {foto && foto.startsWith("data:") ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                        className="rounded-full object-cover w-10 h-10"
+                        src={foto}
+                        alt="Foto de Perfil"
+                    />
+                ) : (
+                    <Image
+                        className="
+                        rounded-full
+                        object-cover
+                        outline-2
+                        outline-offset-2
+                        outline-(--online)
+                        active:outline-3
+                        transition-all
+                        duration-300
+                        ease-in-out
+                    "
+                        src={foto ?? "/balls.jpeg"}
+                        alt="Foto de Perfil"
+                        width={40}
+                        height={40}
+                    />
+                )}
             </button>
 
             {open && (
