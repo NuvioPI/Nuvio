@@ -29,12 +29,17 @@ class ClienteController extends BaseController
             $this->respond(['erro' => 'Informe um e-mail válido.'], 422);
             return;
         }
-        if ($this->usuario->emailExiste($email)) {
-            $this->respond(['erro' => 'Já existe um cliente cadastrado com este e-mail.'], 409);
-            return;
-        }
 
         try {
+            // Permite a publicação desta funcionalidade em bancos que ainda tenham
+            // somente as tabelas originais do projeto.
+            $this->garantirEstruturaCliente();
+
+            if ($this->usuario->emailExiste($email)) {
+                $this->respond(['erro' => 'Já existe um cliente cadastrado com este e-mail.'], 409);
+                return;
+            }
+
             $this->db->beginTransaction();
 
             $tipoCliente = $this->db->query(
@@ -100,10 +105,53 @@ class ClienteController extends BaseController
                 $this->db->rollBack();
             }
             $mensagem = $e instanceof PDOException
-                ? 'Não foi possível salvar o perfil do cliente. Execute a migration_clientes.sql e tente novamente.'
+                ? 'Não foi possível preparar o banco para salvar o perfil do cliente.'
                 : 'Não foi possível cadastrar o cliente.';
             $this->respond(['erro' => $mensagem], 500);
         }
+    }
+
+    private function garantirEstruturaCliente(): void
+    {
+        $this->db->exec(
+            "INSERT INTO tipoUsuario (descricao)
+             SELECT 'Cliente'
+             WHERE NOT EXISTS (SELECT 1 FROM tipoUsuario WHERE descricao = 'Cliente')"
+        );
+
+        $this->db->exec(
+            'CREATE TABLE IF NOT EXISTS ClientePerfil (
+                idUsuario INT PRIMARY KEY,
+                sobrenome VARCHAR(85) NULL,
+                empresa VARCHAR(120) NULL,
+                site VARCHAR(255) NULL,
+                idioma VARCHAR(50) NOT NULL DEFAULT \'Português (BR)\',
+                timezone VARCHAR(80) NOT NULL DEFAULT \'America/Sao_Paulo (UTC -3)\',
+                observacoes TEXT NULL,
+                emailBoasVindas BOOLEAN NOT NULL DEFAULT TRUE,
+                verificado BOOLEAN NOT NULL DEFAULT FALSE,
+                inscrito BOOLEAN NOT NULL DEFAULT TRUE,
+                CONSTRAINT fk_cliente_perfil_usuario
+                    FOREIGN KEY (idUsuario) REFERENCES Usuario(idUsuario) ON DELETE CASCADE
+            )'
+        );
+        $this->db->exec(
+            'CREATE TABLE IF NOT EXISTS ClienteTag (
+                idClienteTag INT PRIMARY KEY AUTO_INCREMENT,
+                nome VARCHAR(50) NOT NULL UNIQUE
+            )'
+        );
+        $this->db->exec(
+            'CREATE TABLE IF NOT EXISTS ClientePerfilTag (
+                idUsuario INT NOT NULL,
+                idClienteTag INT NOT NULL,
+                PRIMARY KEY (idUsuario, idClienteTag),
+                CONSTRAINT fk_cliente_perfil_tag_usuario
+                    FOREIGN KEY (idUsuario) REFERENCES Usuario(idUsuario) ON DELETE CASCADE,
+                CONSTRAINT fk_cliente_perfil_tag_tag
+                    FOREIGN KEY (idClienteTag) REFERENCES ClienteTag(idClienteTag) ON DELETE CASCADE
+            )'
+        );
     }
 
     private function salvarTags(int $idUsuario, $tags): void
