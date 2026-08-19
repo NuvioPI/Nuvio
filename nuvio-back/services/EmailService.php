@@ -123,4 +123,28 @@ class EmailService
             return mail($destinatario, $assunto, $mensagem, implode("\r\n", $headers));
         }
     }
+
+    public function enviarBoasVindasCliente(string $destinatario, string $nomeCliente): bool
+    {
+        if (!filter_var($destinatario, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+
+        $appName = env('APP_NAME', 'Nuvio');
+        $mensagem = "Olá, {$nomeCliente}.\n\n" .
+            "Seu cadastro foi realizado com sucesso no {$appName}.\n" .
+            "Você receberá as atualizações de atendimento neste endereço.\n\n" .
+            "Atenciosamente,\n{$appName}";
+
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($destinatario);
+            $mail->Subject = "Bem-vindo(a) ao {$appName}";
+            $mail->Body = $mensagem;
+            $mail->send();
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
 }
