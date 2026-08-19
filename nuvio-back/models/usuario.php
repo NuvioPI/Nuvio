@@ -207,6 +207,17 @@ class Usuario
         return $stmt->execute([$senhaHash, (int) $this->idUsuario]);
     }
 
+    public function updateFotoPerfil(int $idUsuario, string $caminho): bool
+    {
+        $stmt = $this->db->prepare('UPDATE Usuario SET fotoPerfil = ? WHERE idUsuario = ?');
+        try {
+            $resultado = $stmt->execute([$caminho, $idUsuario]);
+            return $resultado && $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
     public function delete()
     {
         $stmt = $this->db->prepare('DELETE FROM Usuario WHERE idUsuario = ?');

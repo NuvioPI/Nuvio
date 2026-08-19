@@ -58,16 +58,8 @@ class UploadController extends BaseController
         $caminhoNovo = $resultado['caminho'];
         $urlPublica = $resultado['url'];
 
-        // Atualiza a foto no banco de dados MySQL
-        $this->usuario->idUsuario = $idUsuario;
-        $this->usuario->nome = $usuarioAtual['nome'];
-        $this->usuario->email = $usuarioAtual['email'];
-        $this->usuario->cargo = $usuarioAtual['cargo'] ?? '';
-        $this->usuario->setor = $usuarioAtual['setor'] ?? '';
-        $this->usuario->telefone = $usuarioAtual['telefone'] ?? null;
-        $this->usuario->fotoPerfil = $caminhoNovo;
-
-        if ($this->usuario->update()) {
+        // Atualiza apenas a foto no banco de dados MySQL
+        if ($this->usuario->updateFotoPerfil($idUsuario, $caminhoNovo)) {
             // Remove avatar antigo local se existir
             $fotoAntiga = $usuarioAtual['fotoPerfil'] ?? $usuarioAtual['fotoperfil'] ?? '';
             if ($fotoAntiga && str_starts_with($fotoAntiga, '/uploads/avatars/')) {
