@@ -104,9 +104,16 @@ class ClienteController extends BaseController
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
+            error_log(sprintf(
+                'Erro ao cadastrar cliente "%s": %s em %s:%d',
+                $email,
+                $e->getMessage(),
+                $e->getFile(),
+                $e->getLine()
+            ));
             $mensagem = $e instanceof PDOException
-                ? 'Não foi possível preparar o banco para salvar o perfil do cliente.'
-                : 'Não foi possível cadastrar o cliente.';
+                ? 'Não foi possível salvar o cliente no banco de dados. Verifique a estrutura de clientes e tente novamente.'
+                : 'Não foi possível cadastrar o cliente. Tente novamente em instantes.';
             $this->respond(['erro' => $mensagem], 500);
         }
     }
@@ -174,7 +181,10 @@ class ClienteController extends BaseController
 
     private function texto($valor, int $limite): string
     {
-        return mb_substr(trim(is_scalar($valor) ? (string) $valor : ''), 0, $limite);
+        $texto = trim(is_scalar($valor) ? (string) $valor : '');
+        return function_exists('mb_substr')
+            ? mb_substr($texto, 0, $limite)
+            : substr($texto, 0, $limite);
     }
 
     private function booleano($valor): int
