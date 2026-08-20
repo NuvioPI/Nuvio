@@ -102,7 +102,7 @@ export default function NovoClientePage() {
             </div>
             <div>
               <h1 className="text-[15px] font-medium text-(--foreground) m-0">Novo cliente</h1>
-              <p className="text-[12px] text-(--muted-foreground) m-0">Cadastre um contato no Freshdesk</p>
+              <p className="text-[12px] text-(--muted-foreground) m-0">Cadastre um cliente no sistema</p>
             </div>
             <span className="ml-auto text-[11px] font-medium bg-[#eaf3de] text-[#3b6d11] rounded-full px-2.5 py-0.5">
               Novo
