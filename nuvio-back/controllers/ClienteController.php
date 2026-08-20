@@ -92,7 +92,13 @@ class ClienteController extends BaseController
 
             $emailEnviado = false;
             if ($preferencias['emailBoasVindas']) {
-                $emailEnviado = (new EmailService())->enviarBoasVindasCliente($email, $this->usuario->nome);
+                // O envio é complementar: uma falha de SMTP não pode desfazer
+                // nem mascarar um cadastro já confirmado no banco.
+                try {
+                    $emailEnviado = (new EmailService())->enviarBoasVindasCliente($email, $this->usuario->nome);
+                } catch (Throwable $erroEmail) {
+                    error_log(sprintf('Cliente %s criado, mas o e-mail de boas-vindas falhou: %s', $email, $erroEmail->getMessage()));
+                }
             }
 
             $this->respond([
@@ -125,6 +131,25 @@ class ClienteController extends BaseController
              SELECT 'Cliente'
              WHERE NOT EXISTS (SELECT 1 FROM tipoUsuario WHERE descricao = 'Cliente')"
         );
+
+        // Não execute DDL em todo cadastro. Em bancos já migrados, a conta da
+        // aplicação normalmente tem INSERT/UPDATE, mas não tem permissão CREATE.
+        $tabelas = ['ClientePerfil', 'ClienteTag', 'ClientePerfilTag'];
+        $consultaTabela = $this->db->prepare(
+            'SELECT COUNT(*) FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+        );
+        $faltamTabelas = [];
+        foreach ($tabelas as $tabela) {
+            $consultaTabela->execute([$tabela]);
+            if ((int) $consultaTabela->fetchColumn() === 0) {
+                $faltamTabelas[] = $tabela;
+            }
+        }
+
+        if ($faltamTabelas === []) {
+            return;
+        }
 
         $this->db->exec(
             'CREATE TABLE IF NOT EXISTS ClientePerfil (
@@ -169,7 +194,8 @@ class ClienteController extends BaseController
         $buscarTag = $this->db->prepare('SELECT idClienteTag FROM ClienteTag WHERE nome = ? LIMIT 1');
         $vincular = $this->db->prepare('INSERT IGNORE INTO ClientePerfilTag (idUsuario, idClienteTag) VALUES (?, ?)');
 
-        foreach (array_unique($tags) as $tag) {
+        $tagsValidas = array_filter($tags, static fn($tag) => is_scalar($tag));
+        foreach (array_unique($tagsValidas) as $tag) {
             $nome = $this->texto($tag, 50);
             if ($nome === '') continue;
             $inserirTag->execute([$nome]);
