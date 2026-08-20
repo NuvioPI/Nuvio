@@ -14,6 +14,7 @@ export default function DashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const isLiveChat = pathname === "/tickets/live-chat";
 
   const sidebarWidth = collapsed ? "w-16" : "w-64";
 
@@ -48,12 +49,12 @@ export default function DashboardLayout({
       <div className="flex flex-col flex-1 min-w-0 transition-all duration-300">
 
         {/* HEADER */}
-        <header className="h-16 shrink-0 z-30">
+        <header className="h-20 shrink-0 z-30">
           <Header onMobileMenuClick={() => setMobileOpen(true)} />
         </header>
 
         {/* MAIN */}
-        <main className="flex-1 overflow-y-auto">
+        <main className={`flex-1 ${isLiveChat ? "overflow-hidden" : "overflow-y-auto"}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
@@ -61,7 +62,7 @@ export default function DashboardLayout({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.24, ease: "easeOut" }}
-              className="p-6"
+              className={isLiveChat ? "h-full" : "p-6"}
             >
               {children}
             </motion.div>

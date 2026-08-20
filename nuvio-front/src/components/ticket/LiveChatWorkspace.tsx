@@ -2,14 +2,10 @@
 
 import { FormEvent, useEffect, useRef, useMemo, useState } from "react";
 import {
-  Archive,
-  Bell,
   Bold,
   CheckCheck,
   FileText,
   Image as ImageIcon,
-  Inbox,
-  LifeBuoy,
   Link2,
   List,
   MoreHorizontal,
@@ -18,8 +14,6 @@ import {
   Send,
   Smile,
   Star,
-  Tag,
-  Users,
   X,
   Menu,
   ChevronDown,
@@ -47,14 +41,6 @@ type Conversation = {
   color: string;
 };
 
-type Category = {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-  count?: number;
-  active?: boolean;
-};
-
 /* ─── data ───────────────────────────────────────────────── */
 const conversations: Conversation[] = [
   { id: 1, name: "Mariana Costa",   initials: "MC", email: "mariana.costa@technova.com", preview: "Preciso de ajuda com meu acesso",     time: "2m atrás",  unread: 2, online: true,  color: "#e9b79d" },
@@ -80,27 +66,9 @@ const initialMessages: Record<number, Message[]> = {
   ],
 };
 
-const categories: Category[] = [
-  { id: "inbox",      label: "Inbox",       icon: <Inbox size={16} />,     count: 223, active: true },
-  { id: "mentions",   label: "Menções",     icon: <Bell size={16} />,      count: 6 },
-  { id: "unassigned", label: "Não atribuído",icon: <Users size={16} />,    count: 30 },
-  { id: "promotions", label: "Promoções",   icon: <Tag size={16} />,       count: 108 },
-  { id: "support",    label: "Suporte",     icon: <LifeBuoy size={16} />,  count: 2 },
-  { id: "archive",    label: "Arquivo",     icon: <Archive size={16} />,   count: 560 },
-];
-
-const teamMembers = [
-  { name: "Kathryn Murphy",     initials: "KM", color: "#e9b79d" },
-  { name: "Theresa Webb",       initials: "TW", color: "#8cb4d9" },
-  { name: "Darlene Robertson",  initials: "DR", color: "#d3a6c9" },
-  { name: "Arlene McCoy",       initials: "AM", color: "#8fc5af" },
-  { name: "Jane Cooper",        initials: "JC", color: "#dbbd85" },
-];
-
 /* ─── component ─────────────────────────────────────────── */
-export function LiveChatWorkspace() {
+export function LiveChatWorkspace({ fullscreen = false }: { fullscreen?: boolean } = {}) {
   const [selectedId, setSelectedId]   = useState(1);
-  const [activeCategory, setActiveCategory] = useState("inbox");
   const [search, setSearch]           = useState("");
   const [message, setMessage]         = useState("");
   const [allMessages, setAllMessages] = useState<Record<number, Message[]>>(initialMessages);
@@ -138,68 +106,15 @@ export function LiveChatWorkspace() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] overflow-hidden rounded-2xl border border-(--border) bg-(--card) shadow-sm">
+    <div
+      className={
+        fullscreen
+          ? "flex h-full min-h-0 w-full overflow-hidden bg-(--card)"
+          : "flex h-[calc(100vh-5rem)] overflow-hidden rounded-2xl border border-(--border) bg-(--card) shadow-sm"
+      }
+    >
 
-      {/* ── PAINEL 1: categorias ──────────────────────────── */}
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-(--border) bg-(--card) lg:flex">
-        <div className="px-5 pb-4 pt-6">
-          <h1 className="text-xl font-bold text-(--foreground)">Inbox</h1>
-        </div>
-
-        <div className="px-3">
-          <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground)">
-            Conversas
-          </p>
-          <nav className="space-y-0.5">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition cursor-pointer
-                  ${activeCategory === cat.id
-                    ? "bg-(--primary)/10 font-semibold text-(--primary)"
-                    : "text-(--muted-foreground) hover:bg-(--hoverbg) hover:text-(--foreground)"
-                  }`}
-              >
-                <span className={activeCategory === cat.id ? "text-(--primary)" : ""}>{cat.icon}</span>
-                <span className="flex-1 text-left">{cat.label}</span>
-                {cat.count != null && (
-                  <span className={`text-xs font-medium ${activeCategory === cat.id ? "text-(--primary)" : "text-(--muted-foreground)"}`}>
-                    {cat.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <div className="mt-6 px-3">
-          <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground)">
-            Sua equipe
-          </p>
-          <div className="space-y-1">
-            {teamMembers.map((m) => (
-              <button
-                key={m.name}
-                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm text-(--muted-foreground) transition hover:bg-(--hoverbg) hover:text-(--foreground) cursor-pointer"
-              >
-                <span
-                  className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
-                  style={{ backgroundColor: m.color }}
-                >
-                  {m.initials}
-                </span>
-                <span className="truncate">{m.name}</span>
-              </button>
-            ))}
-          </div>
-          <button className="mt-3 flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-(--primary) hover:underline cursor-pointer">
-            + Convidar agente
-          </button>
-        </div>
-      </aside>
-
-      {/* ── PAINEL 2: lista de conversas ─────────────────── */}
+      {/* ── PAINEL 1: lista de conversas ─────────────────── */}
       <aside className={`
         ${mobileList ? "flex" : "hidden"}
         absolute inset-y-0 left-0 z-20 w-[min(88vw,320px)]
