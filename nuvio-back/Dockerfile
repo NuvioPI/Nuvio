@@ -2,7 +2,10 @@ FROM php:8.2-cli
 
 WORKDIR /app
 
-RUN docker-php-ext-install pdo pdo_mysql mbstring
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libonig-dev \
+    && docker-php-ext-install pdo pdo_mysql mbstring \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 

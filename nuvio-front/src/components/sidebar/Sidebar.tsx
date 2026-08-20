@@ -34,6 +34,11 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const activeHref = navItems.reduce((currentHref, item) => {
+    const matches = pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+    return matches && item.href.length > currentHref.length ? item.href : currentHref;
+  }, "");
 
   return (
     <aside className="w-full bg-(--sidebar) border-r border-(--sidebar-border) flex flex-col h-full">
@@ -60,7 +65,7 @@ export function Sidebar({ collapsed, onToggle, onMobileClose }: SidebarProps) {
       <nav className="flex-1 px-2">
         <div className="flex flex-col gap-1">
           {navItems.map(({ icon: Icon, label, href }, index) => {
-            const ativo = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));
+            const ativo = activeHref === href;
 
             return (
             <AnimateIcon key={label} animateOnHover>
