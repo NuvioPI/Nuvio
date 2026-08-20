@@ -3,7 +3,6 @@
 require_once __DIR__ . '/../config/env.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 class EmailService
 {
@@ -73,7 +72,7 @@ class EmailService
             $mail->send();
 
             return true;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             // fallback to mail()
             $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
             $headers = [
@@ -113,7 +112,7 @@ class EmailService
             $mail->send();
 
             return true;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
             $headers = [
                 "From: {$remetente}",
@@ -154,7 +153,7 @@ class EmailService
             $mail->send();
 
             return true;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
             $headers = [
                 "From: {$remetente}",
@@ -184,7 +183,7 @@ class EmailService
             $mail->Body = $mensagem;
             $mail->send();
             return true;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return false;
         }
     }
