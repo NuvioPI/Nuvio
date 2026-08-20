@@ -124,6 +124,47 @@ class EmailService
         }
     }
 
+    public function enviarRespostaTicket(
+        string $destinatario,
+        string $nomeUsuario,
+        int $idTicket,
+        string $tituloTicket,
+        string $mensagem,
+        string $assunto = ''
+    ): bool {
+        if (!filter_var($destinatario, FILTER_VALIDATE_EMAIL) || trim($mensagem) === '') {
+            return false;
+        }
+
+        $appName = env('APP_NAME', 'Nuvio');
+        $assunto = trim($assunto) !== ''
+            ? trim($assunto)
+            : "Re: {$tituloTicket} (#{$idTicket})";
+
+        $corpo = "Olá, {$nomeUsuario}.\n\n" . trim($mensagem) . "\n\n" .
+            "---\n" .
+            "Chamado #{$idTicket}: {$tituloTicket}\n" .
+            "Atenciosamente,\n{$appName}";
+
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($destinatario, $nomeUsuario);
+            $mail->Subject = $assunto;
+            $mail->Body = $corpo;
+            $mail->send();
+
+            return true;
+        } catch (Exception $e) {
+            $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
+            $headers = [
+                "From: {$remetente}",
+                "Content-Type: text/plain; charset=UTF-8",
+            ];
+
+            return mail($destinatario, $assunto, $corpo, implode("\r\n", $headers));
+        }
+    }
+
     public function enviarBoasVindasCliente(string $destinatario, string $nomeCliente): bool
     {
         if (!filter_var($destinatario, FILTER_VALIDATE_EMAIL)) {

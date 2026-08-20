@@ -14,7 +14,7 @@ export default function DashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const isLiveChat = pathname === "/tickets/live-chat";
+  const isFullHeightWorkspace = ["/tickets/live-chat", "/tickets/atendimento"].includes(pathname);
 
   const sidebarWidth = collapsed ? "w-16" : "w-64";
 
@@ -54,7 +54,7 @@ export default function DashboardLayout({
         </header>
 
         {/* MAIN */}
-        <main className={`flex-1 ${isLiveChat ? "overflow-hidden" : "overflow-y-auto"}`}>
+        <main className={`flex-1 ${isFullHeightWorkspace ? "overflow-hidden" : "overflow-y-auto"}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
@@ -62,7 +62,7 @@ export default function DashboardLayout({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.24, ease: "easeOut" }}
-              className={isLiveChat ? "h-full" : "p-6"}
+              className={isFullHeightWorkspace ? "h-full" : "p-6"}
             >
               {children}
             </motion.div>
