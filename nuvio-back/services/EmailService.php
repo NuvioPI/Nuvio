@@ -3,7 +3,6 @@
 require_once __DIR__ . '/../config/env.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 class EmailService
 {
@@ -73,7 +72,7 @@ class EmailService
             $mail->send();
 
             return true;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             // fallback to mail()
             $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
             $headers = [
@@ -113,7 +112,7 @@ class EmailService
             $mail->send();
 
             return true;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
             $headers = [
                 "From: {$remetente}",
@@ -121,6 +120,47 @@ class EmailService
             ];
 
             return mail($destinatario, $assunto, $mensagem, implode("\r\n", $headers));
+        }
+    }
+
+    public function enviarRespostaTicket(
+        string $destinatario,
+        string $nomeUsuario,
+        int $idTicket,
+        string $tituloTicket,
+        string $mensagem,
+        string $assunto = ''
+    ): bool {
+        if (!filter_var($destinatario, FILTER_VALIDATE_EMAIL) || trim($mensagem) === '') {
+            return false;
+        }
+
+        $appName = env('APP_NAME', 'Nuvio');
+        $assunto = trim($assunto) !== ''
+            ? trim($assunto)
+            : "Re: {$tituloTicket} (#{$idTicket})";
+
+        $corpo = "Olá, {$nomeUsuario}.\n\n" . trim($mensagem) . "\n\n" .
+            "---\n" .
+            "Chamado #{$idTicket}: {$tituloTicket}\n" .
+            "Atenciosamente,\n{$appName}";
+
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($destinatario, $nomeUsuario);
+            $mail->Subject = $assunto;
+            $mail->Body = $corpo;
+            $mail->send();
+
+            return true;
+        } catch (\Throwable $e) {
+            $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
+            $headers = [
+                "From: {$remetente}",
+                "Content-Type: text/plain; charset=UTF-8",
+            ];
+
+            return mail($destinatario, $assunto, $corpo, implode("\r\n", $headers));
         }
     }
 
@@ -143,7 +183,7 @@ class EmailService
             $mail->Body = $mensagem;
             $mail->send();
             return true;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return false;
         }
     }

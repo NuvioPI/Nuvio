@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { AlertCircle, CheckCircle2, Clock3, FileText, Search } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import type { TicketResumo } from "@/components/dashboard/ui/table";
@@ -49,7 +50,7 @@ export default function HistoricoChamadosPage() {
         {erro && <tr><td colSpan={6} className="p-8 text-center text-red-500">{erro}</td></tr>}
         {!carregando && !erro && filtrados.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-(--muted-foreground)">Nenhum chamado encontrado.</td></tr>}
         {filtrados.map((ticket) => <tr key={ticket.idTicket} className="border-b border-(--border) hover:bg-(--muted)">
-          <td className="p-5">#{ticket.idTicket}</td><td className="p-5 font-medium">{ticket.titulo}</td><td className="p-5">{ticket.nomeUsuario}</td>
+          <td className="p-5"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="text-(--primary) hover:underline">#{ticket.idTicket}</Link></td><td className="p-5 font-medium"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="hover:text-(--primary)">{ticket.titulo}</Link></td><td className="p-5">{ticket.nomeUsuario}</td>
           <td className="p-5"><Badge>{ticket.prioridade}</Badge></td><td className="p-5"><Badge>{ticket.statusTicket}</Badge></td>
           <td className="p-5 text-(--muted-foreground)">{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(ticket.dataAbertura))}</td>
         </tr>)}

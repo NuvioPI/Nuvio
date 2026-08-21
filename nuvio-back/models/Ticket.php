@@ -105,8 +105,8 @@ class Ticket
                 us.nome AS nomeTecnico,
                 c.nomeCategoria,
                 s.nomeSLA,
-                s.tempoResposta,
-                s.tempoResolucao
+                s.tempoRespostaMinutos AS tempoResposta,
+                s.tempoResolucaoMinutos AS tempoResolucao
             FROM {$this->tabela} t
             INNER JOIN Usuario u
                 ON t.idUsuario = u.idUsuario

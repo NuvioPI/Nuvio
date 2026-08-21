@@ -86,7 +86,12 @@ class TicketController extends BaseController
                     'statusTicket' => $this->ticket->statusTicket,
                     'prioridade' => $this->ticket->prioridade,
                     'dataAbertura' => $this->ticket->dataAbertura,
-                    'dataFechamento' => $this->ticket->dataFechamento
+                    'dataFechamento' => $this->ticket->dataFechamento,
+                    'nomeUsuario' => $this->ticket->nomeUsuario,
+                    'emailUsuario' => $this->ticket->emailUsuario,
+                    'nomeTecnico' => $this->ticket->nomeTecnico,
+                    'nomeCategoria' => $this->ticket->nomeCategoria,
+                    'nomeSLA' => $this->ticket->nomeSLA,
                 ]
             ]);
         } catch (PDOException $erro) {
@@ -513,6 +518,79 @@ class TicketController extends BaseController
             $this->respond([
                 'erro' => 'Não foi possível atualizar o ticket.'
             ], 500);
+        }
+    }
+
+    /**
+     * POST /tickets/{id}/responder-email
+     */
+    public function responderEmail($id)
+    {
+        if (!$this->idValido($id)) {
+            $this->respond(['erro' => 'ID do ticket inválido.'], 400);
+            return;
+        }
+
+        $body = $this->body();
+        $mensagem = trim((string) ($body['mensagem'] ?? ''));
+        $assunto = trim((string) ($body['assunto'] ?? ''));
+
+        if ($mensagem === '') {
+            $this->respond(['erro' => 'A mensagem da resposta é obrigatória.'], 422);
+            return;
+        }
+
+        $ticket = new Ticket($this->db);
+        $ticket->idTicket = (int) $id;
+
+        try {
+            if (!$ticket->getById()) {
+                $this->respond(['erro' => 'Ticket não encontrado.'], 404);
+                return;
+            }
+
+            if (in_array($ticket->statusTicket, ['Resolvido', 'Fechado'], true)) {
+                $this->respond(['erro' => 'Este ticket não aceita novas respostas.'], 409);
+                return;
+            }
+
+            if (!filter_var($ticket->emailUsuario, FILTER_VALIDATE_EMAIL)) {
+                $this->respond(['erro' => 'O solicitante não possui um e-mail válido.'], 422);
+                return;
+            }
+
+            $emailService = new EmailService();
+            $enviado = $emailService->enviarRespostaTicket(
+                (string) $ticket->emailUsuario,
+                (string) ($ticket->nomeUsuario ?: 'cliente'),
+                (int) $ticket->idTicket,
+                (string) $ticket->titulo,
+                strip_tags($mensagem),
+                strip_tags($assunto)
+            );
+
+            if (!$enviado) {
+                $this->respond(['erro' => 'Não foi possível enviar o e-mail. Verifique a configuração SMTP.'], 502);
+                return;
+            }
+
+            $stmt = $this->db->prepare(
+                'INSERT INTO respostaTicket (idUsuario, idTicket, msgTicket, dataResposta) VALUES (?, ?, ?, NOW())'
+            );
+            $stmt->execute([
+                $this->idUsuarioAutenticado,
+                (int) $id,
+                strip_tags($mensagem),
+            ]);
+
+            $this->respond([
+                'mensagem' => 'Resposta enviada por e-mail com sucesso.',
+                'idRespostaTicket' => (int) $this->db->lastInsertId(),
+                'destinatario' => $ticket->emailUsuario,
+            ], 201);
+        } catch (Throwable $erro) {
+            error_log('TicketController::responderEmail - ' . $erro->getMessage());
+            $this->respond(['erro' => 'Não foi possível concluir o envio da resposta.'], 500);
         }
     }
 
