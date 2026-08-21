@@ -43,8 +43,14 @@ export async function apiFetch<T>(caminho: string, opcoes: RequestInit = {}): Pr
 
     return dados as T;
   } catch (err: any) {
-    if (err.message && err.message.includes("Failed to fetch")) {
-      throw new Error("Não foi possível conectar ao servidor backend. Verifique se o PHP está em execução.");
+    const mensagemErro = err instanceof Error ? err.message : String(err);
+    if (
+      err instanceof TypeError ||
+      /Failed to fetch|NetworkError|Load failed/i.test(mensagemErro)
+    ) {
+      throw new Error(
+        `Não foi possível acessar o backend em ${API_URL}. Verifique NEXT_PUBLIC_API_URL no frontend e CORS_ORIGIN no backend do Render.`
+      );
     }
     throw err;
   }
