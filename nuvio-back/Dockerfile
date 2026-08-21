@@ -22,4 +22,4 @@ COPY . .
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-10000} -t public public/router.php"]
+CMD ["sh", "-c", "php scripts/migrate-performance.php || echo 'Aviso: migração de performance não aplicada'; exec php -S 0.0.0.0:${PORT:-10000} -t public public/router.php"]

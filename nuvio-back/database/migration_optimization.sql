@@ -5,7 +5,7 @@
 -- Data: 2026-06-14
 -- ============================================================================
 
-USE nuviohelpdesk;
+-- Execute no banco configurado em DB_NAME. Não fixe o nome do banco aqui.
 
 -- ============================================================================
 -- 1️⃣ ADICIONAR COLUNAS DE SOFT DELETE E TIMESTAMP
@@ -56,7 +56,6 @@ ADD COLUMN IF NOT EXISTS updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE
 
 -- Índices na tabela Usuario
 ALTER TABLE Usuario ADD INDEX IF NOT EXISTS idx_email (email);
-ALTER TABLE Usuario ADD INDEX IF NOT EXISTS idx_ativo (ativo);
 ALTER TABLE Usuario ADD INDEX IF NOT EXISTS idx_deletedAt (deletedAt);
 ALTER TABLE Usuario ADD INDEX IF NOT EXISTS idx_updatedAt (updatedAt);
 
@@ -107,7 +106,7 @@ ALTER TABLE Administrador ADD INDEX IF NOT EXISTS idx_deletedAt (deletedAt);
 ALTER TABLE Administrador ADD INDEX IF NOT EXISTS idx_updatedAt (updatedAt);
 
 -- Índices na tabela Categoria
-ALTER TABLE Categoria ADD INDEX IF NOT EXISTS idx_nome (nome);
+ALTER TABLE Categoria ADD INDEX IF NOT EXISTS idx_nomeCategoria (nomeCategoria);
 ALTER TABLE Categoria ADD INDEX IF NOT EXISTS idx_deletedAt (deletedAt);
 ALTER TABLE Categoria ADD INDEX IF NOT EXISTS idx_updatedAt (updatedAt);
 

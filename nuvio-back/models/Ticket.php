@@ -4,19 +4,24 @@ class Ticket
 {
     private $conn;
     private $tabela = 'Ticket';
-    private ?array $colunasUsuarioCached = null;
+    private static ?bool $usuarioTemFotoPerfil = null;
 
     private function temColunaUsuario(string $coluna): bool
     {
-        if ($this->colunasUsuarioCached === null) {
+        if (self::$usuarioTemFotoPerfil === null) {
             try {
                 $stmt = $this->conn->query('SHOW COLUMNS FROM Usuario');
-                $this->colunasUsuarioCached = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
+                self::$usuarioTemFotoPerfil = in_array(
+                    $coluna,
+                    array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'Field'),
+                    true
+                );
             } catch (PDOException $e) {
-                $this->colunasUsuarioCached = [];
+                self::$usuarioTemFotoPerfil = false;
             }
         }
-        return in_array($coluna, $this->colunasUsuarioCached, true);
+
+        return self::$usuarioTemFotoPerfil;
     }
 
     public $idTicket;
@@ -44,7 +49,9 @@ class Ticket
 
     public function getAll()
     {
-        $fotoSelect = $this->temColunaUsuario('fotoPerfil') ? ', u.fotoPerfil AS fotoPerfil' : ", NULL AS fotoPerfil";
+        $fotoSelect = $this->temColunaUsuario('fotoPerfil')
+            ? ', u.fotoPerfil AS fotoPerfil'
+            : ', NULL AS fotoPerfil';
 
         $query = "
             SELECT
