@@ -263,6 +263,7 @@ class TicketController extends BaseController
             $this->db->commit();
 
             // attempt to notify the user by email about the new ticket
+            $emailEnviado = false;
             try {
                 $ticketCompleto = new Ticket($this->db);
                 $ticketCompleto->idTicket = (int) $this->ticket->idTicket;
@@ -285,7 +286,11 @@ class TicketController extends BaseController
 
             $this->respond([
                 'mensagem' => 'Ticket criado com sucesso.',
-                'idTicket' => (int) $this->ticket->idTicket
+                'idTicket' => (int) $this->ticket->idTicket,
+                'emailEnviado' => $emailEnviado,
+                'avisoEmail' => $emailEnviado
+                    ? null
+                    : 'O ticket foi criado, mas o e-mail de confirmação não pôde ser enviado.'
             ], 201);
         } catch (PDOException $erro) {
             $this->desfazerTransacao();

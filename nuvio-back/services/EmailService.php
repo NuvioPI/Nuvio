@@ -9,31 +9,45 @@ class EmailService
     private function createMailer(): PHPMailer
     {
         $mail = new PHPMailer(true);
-        $mail->Timeout = 8;
-        $mail->Timelimit = 8;
+        $timeout = max(1, (int) env('MAIL_TIMEOUT', 8));
+        $mail->Timeout = $timeout;
+        $mail->Timelimit = $timeout;
 
         $host = env('MAIL_HOST', '');
         $port = (int) env('MAIL_PORT', 587);
         $username = env('MAIL_USERNAME', '');
         $password = preg_replace('/\s+/', '', (string) env('MAIL_PASSWORD', ''));
-        $from = env('MAIL_FROM', 'no-reply@nuvio.local');
+        $from = env('MAIL_FROM', '');
         $fromName = env('MAIL_FROM_NAME', env('APP_NAME', 'Nuvio'));
         $encryption = env('MAIL_ENCRYPTION', 'tls');
 
-        if ($host !== '') {
-            // Configure SMTP
-            $mail->isSMTP();
-            $mail->Host = $host;
-            $mail->Port = $port;
-            $mail->SMTPAuth = $username !== '' && $password !== '';
-            if ($mail->SMTPAuth) {
-                $mail->Username = $username;
-                $mail->Password = $password;
+        $camposAusentes = [];
+        foreach ([
+            'MAIL_HOST' => $host,
+            'MAIL_USERNAME' => $username,
+            'MAIL_PASSWORD' => $password,
+            'MAIL_FROM' => $from,
+        ] as $campo => $valor) {
+            if (trim((string) $valor) === '') {
+                $camposAusentes[] = $campo;
             }
+        }
 
-            if (in_array(strtolower($encryption), ['ssl', 'tls'], true)) {
-                $mail->SMTPSecure = $encryption;
-            }
+        if ($camposAusentes !== []) {
+            throw new RuntimeException(
+                'Configuração SMTP incompleta: ' . implode(', ', $camposAusentes)
+            );
+        }
+
+        $mail->isSMTP();
+        $mail->Host = $host;
+        $mail->Port = $port;
+        $mail->SMTPAuth = true;
+        $mail->Username = $username;
+        $mail->Password = $password;
+
+        if (in_array(strtolower($encryption), ['ssl', 'tls'], true)) {
+            $mail->SMTPSecure = strtolower($encryption);
         }
 
         $mail->setFrom($from, $fromName);
@@ -76,14 +90,7 @@ class EmailService
             return true;
         } catch (\Throwable $e) {
             error_log('Falha SMTP ao enviar atualização do ticket: ' . $e->getMessage());
-            // fallback to mail()
-            $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
-            $headers = [
-                "From: {$remetente}",
-                "Content-Type: text/plain; charset=UTF-8",
-            ];
-
-            return mail($destinatario, $assunto, $mensagem, implode("\r\n", $headers));
+            return false;
         }
     }
 
@@ -117,13 +124,7 @@ class EmailService
             return true;
         } catch (\Throwable $e) {
             error_log('Falha SMTP ao enviar criação do ticket: ' . $e->getMessage());
-            $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
-            $headers = [
-                "From: {$remetente}",
-                "Content-Type: text/plain; charset=UTF-8",
-            ];
-
-            return mail($destinatario, $assunto, $mensagem, implode("\r\n", $headers));
+            return false;
         }
     }
 
@@ -159,13 +160,7 @@ class EmailService
             return true;
         } catch (\Throwable $e) {
             error_log('Falha SMTP ao enviar resposta do ticket: ' . $e->getMessage());
-            $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
-            $headers = [
-                "From: {$remetente}",
-                "Content-Type: text/plain; charset=UTF-8",
-            ];
-
-            return mail($destinatario, $assunto, $corpo, implode("\r\n", $headers));
+            return false;
         }
     }
 
@@ -189,6 +184,7 @@ class EmailService
             $mail->send();
             return true;
         } catch (\Throwable $e) {
+            error_log('Falha SMTP ao enviar boas-vindas: ' . $e->getMessage());
             return false;
         }
     }
