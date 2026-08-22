@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { API_URL } from "@/lib/api-url";
 
 const PROTECTED_PATHS = ["/admin", "/dashboard", "/tickets", "/users", "/reports", "/settings", "/sla", "/integracoes", "/perfil", "/portal/chamados", "/portal/chat"];
 const PUBLIC_ADMIN_PATHS = ["/admin/login"];
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
