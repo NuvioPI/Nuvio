@@ -4,8 +4,92 @@ import {
   Upload,
   Plus,
 } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+
+type Usuario = { idUsuario: number; nome: string; email: string };
+type Tecnico = { idTecnico: number; nomeUsuario?: string; nome?: string; especialidade?: string };
+type Categoria = { idCategoria: number; nomeCategoria: string };
+type Sla = { idSLA: number; nomeSLA: string };
+
+type Option = { value: string; label: string };
 
 export default function NovoChamadoPage() {
+  const router = useRouter();
+  const { usuario } = useAuth();
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [slas, setSlas] = useState<Sla[]>([]);
+  const [form, setForm] = useState({
+    idUsuario: "",
+    idTecnico: "",
+    idCategoria: "",
+    idSLA: "",
+    titulo: "",
+    prioridade: "Media",
+    descricao: "",
+  });
+  const [carregando, setCarregando] = useState(true);
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
+
+  useEffect(() => {
+    Promise.all([
+      usuario?.tipo === "Administrador"
+        ? apiFetch<{ usuarios: Usuario[] }>("/usuarios")
+        : Promise.resolve({ usuarios: usuario ? [{ idUsuario: usuario.id, nome: usuario.nome, email: usuario.email }] : [] }),
+      apiFetch<{ tecnicos: Tecnico[] }>("/tecnicos?ativos=1"),
+      apiFetch<{ categorias: Categoria[] }>("/categorias"),
+      apiFetch<{ slas: Sla[] }>("/sla"),
+    ])
+      .then(([usuariosRes, tecnicosRes, categoriasRes, slasRes]) => {
+        setUsuarios(usuariosRes.usuarios ?? []);
+        setTecnicos(tecnicosRes.tecnicos ?? []);
+        setCategorias(categoriasRes.categorias ?? []);
+        setSlas(slasRes.slas ?? []);
+        setForm((atual) => ({
+          ...atual,
+          idUsuario: String(usuariosRes.usuarios?.[0]?.idUsuario ?? ""),
+          idTecnico: String(tecnicosRes.tecnicos?.[0]?.idTecnico ?? ""),
+          idCategoria: String(categoriasRes.categorias?.[0]?.idCategoria ?? ""),
+          idSLA: String(slasRes.slas?.[0]?.idSLA ?? ""),
+        }));
+      })
+      .catch((cause) => setErro(cause instanceof Error ? cause.message : "Não foi possível carregar os dados do formulário."))
+      .finally(() => setCarregando(false));
+  }, [usuario]);
+
+  function atualizar(campo: keyof typeof form, valor: string) {
+    setForm((atual) => ({ ...atual, [campo]: valor }));
+  }
+
+  async function criarChamado(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErro("");
+    setEnviando(true);
+
+    try {
+      const resposta = await apiFetch<{ idTicket: number }>("/tickets", {
+        method: "POST",
+        body: JSON.stringify({
+          ...form,
+          idUsuario: Number(form.idUsuario),
+          idTecnico: Number(form.idTecnico),
+          idCategoria: Number(form.idCategoria),
+          idSLA: Number(form.idSLA),
+        }),
+      });
+      router.push(`/tickets?criado=${resposta.idTicket}`);
+    } catch (cause) {
+      setErro(cause instanceof Error ? cause.message : "Não foi possível criar o chamado.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
   return (
     <div className="flex min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* CONTENT */}
@@ -24,7 +108,7 @@ export default function NovoChamadoPage() {
           </div>
 
           {/* GRID */}
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-8 items-start">
+          <form onSubmit={criarChamado} className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-8 items-start">
             {/* FORM */}
             <section
               className="
@@ -53,47 +137,58 @@ export default function NovoChamadoPage() {
 
               {/* FORM */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                <Input label="Solicitante" />
+                <Select
+                  label="Solicitante"
+                  value={form.idUsuario}
+                  onChange={(value) => atualizar("idUsuario", value)}
+                  options={usuarios.map((usuario) => ({ value: String(usuario.idUsuario), label: usuario.nome }))}
+                  disabled={carregando || usuarios.length === 0}
+                />
 
-                <Input label="E-mail" />
+                <Input label="E-mail" value={usuarios.find((usuario) => String(usuario.idUsuario) === form.idUsuario)?.email ?? ""} readOnly />
 
                 <Input
                   label="Título do chamado"
                   className="md:col-span-2"
+                  value={form.titulo}
+                  onChange={(value) => atualizar("titulo", value)}
+                  required
                 />
 
                 <Select 
                   label="Categoria" 
-                  options={[
-                    "Software", 
-                    "Hardware", 
-                    "Rede", 
-                    "Acessos/Permissões", 
-                    "Infraestrutura", 
-                    "Telefonia", 
-                    "Outros"
-                  ]} 
+                  value={form.idCategoria}
+                  onChange={(value) => atualizar("idCategoria", value)}
+                  options={categorias.map((categoria) => ({ value: String(categoria.idCategoria), label: categoria.nomeCategoria }))}
+                  disabled={carregando}
                 />
 
                 <Select 
                   label="Prioridade" 
-                  options={["Baixa", "Média", "Alta", "Urgente", "Crítica"]} 
+                  value={form.prioridade}
+                  onChange={(value) => atualizar("prioridade", value)}
+                  options={[{ value: "Baixa", label: "Baixa" }, { value: "Media", label: "Média" }, { value: "Alta", label: "Alta" }]}
                 />
 
                 <Select 
                   label="Responsável" 
-                  options={[
-                    "Suporte Nível 1", 
-                    "Suporte Nível 2", 
-                    "Time de Infraestrutura", 
-                    "Time de Desenvolvimento", 
-                    "Segurança da Informação"
-                  ]} 
+                  value={form.idTecnico}
+                  onChange={(value) => atualizar("idTecnico", value)}
+                  options={tecnicos.map((tecnico) => ({ value: String(tecnico.idTecnico), label: tecnico.nomeUsuario || tecnico.nome || `Técnico #${tecnico.idTecnico}` }))}
+                  disabled={carregando}
+                />
+
+                <Select
+                  label="SLA"
+                  value={form.idSLA}
+                  onChange={(value) => atualizar("idSLA", value)}
+                  options={slas.map((sla) => ({ value: String(sla.idSLA), label: sla.nomeSLA }))}
+                  disabled={carregando}
                 />
 
                 <Select 
                   label="Localização" 
-                  options={["Matriz", "Filial SP", "Filial RJ", "Home Office", "Terceiros"]} 
+                  options={["Matriz", "Filial SP", "Filial RJ", "Home Office", "Terceiros"].map((localizacao) => ({ value: localizacao, label: localizacao }))}
                 />
               </div>
 
@@ -105,6 +200,9 @@ export default function NovoChamadoPage() {
 
                 <textarea
                   placeholder="Descreva o problema detalhadamente..."
+                  value={form.descricao}
+                  onChange={(event) => atualizar("descricao", event.target.value)}
+                  required
                   className="
                     w-full
                     min-h-[220px]
@@ -129,6 +227,8 @@ export default function NovoChamadoPage() {
                   "
                 />
               </div>
+
+              {erro && <p role="alert" className="text-sm text-red-500">{erro}</p>}
 
               {/* UPLOAD */}
               <div>
@@ -191,6 +291,7 @@ export default function NovoChamadoPage() {
                   </p>
 
                   <button
+                    type="button"
                     className="
                       mt-6
 
@@ -297,6 +398,8 @@ export default function NovoChamadoPage() {
 
                 {/* BUTTON */}
                 <button
+                  type="submit"
+                  disabled={carregando || enviando || !form.idUsuario || !form.idTecnico || !form.idCategoria || !form.idSLA}
                   className="
                     mt-8
                     w-full
@@ -328,11 +431,11 @@ export default function NovoChamadoPage() {
                   "
                 >
                   <Plus size={24} strokeWidth={2.5} />
-                  Criar chamado
+                  {enviando ? "Criando chamado..." : "Criar chamado"}
                 </button>
               </div>
             </aside>
-          </div>
+          </form>
         </div>
       </main>
     </div>
@@ -344,9 +447,17 @@ export default function NovoChamadoPage() {
 function Input({
   label,
   className,
+  value = "",
+  onChange,
+  readOnly = false,
+  required = false,
 }: {
   label: string;
   className?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+  readOnly?: boolean;
+  required?: boolean;
 }) {
   return (
     <div className={className}>
@@ -356,6 +467,10 @@ function Input({
 
       <input
         placeholder={`Digite ${label.toLowerCase()}`}
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+        readOnly={readOnly}
+        required={required}
         className="
           w-full
 
@@ -385,9 +500,15 @@ function Input({
 function Select({
   label,
   options = [],
+  value = "",
+  onChange,
+  disabled = false,
 }: {
   label: string;
-  options?: string[];
+  options?: Option[];
+  value?: string;
+  onChange?: (value: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -396,6 +517,10 @@ function Select({
       </label>
 
       <select
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+        disabled={disabled}
+        required={Boolean(onChange)}
         className="
           w-full
 
@@ -418,8 +543,8 @@ function Select({
       >
         <option value="">Selecionar {label.toLowerCase()}</option>
         {options.map((option) => (
-          <option key={option} value={option.toLowerCase()}>
-            {option}
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>

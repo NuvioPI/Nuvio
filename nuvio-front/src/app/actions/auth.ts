@@ -28,7 +28,11 @@ export async function loginAction(formData: FormData) {
       return { error: data.erro || "Credenciais inválidas." };
     }
 
-    if (data.usuario.tipo?.nome !== "Administrador") {
+    const tipoNome = typeof data.usuario.tipo === "object" && data.usuario.tipo !== null
+      ? data.usuario.tipo.nome
+      : data.usuario.tipo;
+
+    if (tipoNome !== "Administrador") {
       return { error: "Acesso restrito a administradores." };
     }
 
