@@ -1,6 +1,5 @@
-const DEFAULT_API_URL = "http://localhost:8000";
-
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/$/, "");
+export { API_URL } from "./api-url";
+import { API_URL } from "./api-url";
 
 function tokenAtual(): string | null {
   if (typeof document === "undefined") return null;
@@ -42,14 +41,14 @@ export async function apiFetch<T>(caminho: string, opcoes: RequestInit = {}): Pr
     }
 
     return dados as T;
-  } catch (err: any) {
+  } catch (err: unknown) {
     const mensagemErro = err instanceof Error ? err.message : String(err);
     if (
       err instanceof TypeError ||
       /Failed to fetch|NetworkError|Load failed/i.test(mensagemErro)
     ) {
       throw new Error(
-        `Não foi possível acessar o backend em ${API_URL}. Verifique NEXT_PUBLIC_API_URL no frontend e CORS_ORIGIN no backend do Render.`
+        `Não foi possível acessar o backend em ${API_URL}. Verifique o serviço do backend no Render e a configuração de CORS.`
       );
     }
     throw err;
