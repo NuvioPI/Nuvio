@@ -4,6 +4,7 @@ import {
   Upload,
   Plus,
 } from "lucide-react";
+import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
@@ -35,6 +36,7 @@ export default function NovoChamadoPage() {
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
+  const [sucesso, setSucesso] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -69,6 +71,7 @@ export default function NovoChamadoPage() {
   async function criarChamado(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErro("");
+    setSucesso(null);
     setEnviando(true);
 
     try {
@@ -82,7 +85,7 @@ export default function NovoChamadoPage() {
           idSLA: Number(form.idSLA),
         }),
       });
-      router.push(`/tickets?criado=${resposta.idTicket}`);
+      setSucesso(resposta.idTicket);
     } catch (cause) {
       setErro(cause instanceof Error ? cause.message : "Não foi possível criar o chamado.");
     } finally {
@@ -228,7 +231,16 @@ export default function NovoChamadoPage() {
                 />
               </div>
 
-              {erro && <p role="alert" className="text-sm text-red-500">{erro}</p>}
+              {erro && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-500">Não foi possível criar o chamado: {erro}</p>}
+              {sucesso && (
+                <div role="status" className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-500">
+                  <p className="font-semibold">Chamado #{sucesso} criado com sucesso!</p>
+                  <p className="mt-1">O chamado foi registrado como aberto.</p>
+                  <Link href="/tickets" className="mt-3 inline-block font-semibold underline">
+                    Ver meus chamados
+                  </Link>
+                </div>
+              )}
 
               {/* UPLOAD */}
               <div>
@@ -399,7 +411,7 @@ export default function NovoChamadoPage() {
                 {/* BUTTON */}
                 <button
                   type="submit"
-                  disabled={carregando || enviando || !form.idUsuario || !form.idTecnico || !form.idCategoria || !form.idSLA}
+                  disabled={carregando || enviando || sucesso !== null || !form.idUsuario || !form.idTecnico || !form.idCategoria || !form.idSLA}
                   className="
                     mt-8
                     w-full
@@ -431,7 +443,7 @@ export default function NovoChamadoPage() {
                   "
                 >
                   <Plus size={24} strokeWidth={2.5} />
-                  {enviando ? "Criando chamado..." : "Criar chamado"}
+                  {enviando ? "Criando chamado..." : sucesso ? "Chamado criado" : "Criar chamado"}
                 </button>
               </div>
             </aside>

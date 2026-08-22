@@ -9,6 +9,8 @@ class EmailService
     private function createMailer(): PHPMailer
     {
         $mail = new PHPMailer(true);
+        $mail->Timeout = 8;
+        $mail->Timelimit = 8;
 
         $host = env('MAIL_HOST', '');
         $port = (int) env('MAIL_PORT', 587);
