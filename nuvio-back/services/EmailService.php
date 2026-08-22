@@ -13,7 +13,7 @@ class EmailService
         $host = env('MAIL_HOST', '');
         $port = (int) env('MAIL_PORT', 587);
         $username = env('MAIL_USERNAME', '');
-        $password = env('MAIL_PASSWORD', '');
+        $password = preg_replace('/\s+/', '', (string) env('MAIL_PASSWORD', ''));
         $from = env('MAIL_FROM', 'no-reply@nuvio.local');
         $fromName = env('MAIL_FROM_NAME', env('APP_NAME', 'Nuvio'));
         $encryption = env('MAIL_ENCRYPTION', 'tls');

@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Ticket.php';
+require_once __DIR__ . '/../services/EmailService.php';
 
 class PortalController extends BaseController
 {
@@ -81,6 +82,29 @@ class PortalController extends BaseController
             );
             $historico->execute([$idTicket, $this->idUsuario, 'Criacao', 'statusTicket', 'Aberto']);
             $this->db->commit();
+
+            try {
+                $usuario = $this->db->prepare(
+                    'SELECT nome, email FROM Usuario WHERE idUsuario = ? LIMIT 1'
+                );
+                $usuario->execute([$this->idUsuario]);
+                $dadosUsuario = $usuario->fetch(PDO::FETCH_ASSOC);
+
+                if ($dadosUsuario && !empty($dadosUsuario['email'])) {
+                    $emailEnviado = (new EmailService())->enviarNovoTicket(
+                        $dadosUsuario['email'],
+                        $dadosUsuario['nome'] ?? 'usuário',
+                        $idTicket,
+                        strip_tags($titulo)
+                    );
+
+                    if (!$emailEnviado) {
+                        error_log("Não foi possível enviar o e-mail do ticket #{$idTicket}.");
+                    }
+                }
+            } catch (Throwable $erroEmail) {
+                error_log('Erro ao enviar email de criação do ticket pelo portal: ' . $erroEmail->getMessage());
+            }
 
             $this->respond(['mensagem' => 'Chamado aberto com sucesso.', 'idTicket' => $idTicket], 201);
         } catch (RuntimeException $erro) {
