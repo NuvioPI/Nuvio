@@ -73,6 +73,7 @@ class EmailService
 
             return true;
         } catch (\Throwable $e) {
+            error_log('Falha SMTP ao enviar atualização do ticket: ' . $e->getMessage());
             // fallback to mail()
             $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
             $headers = [
@@ -113,6 +114,7 @@ class EmailService
 
             return true;
         } catch (\Throwable $e) {
+            error_log('Falha SMTP ao enviar criação do ticket: ' . $e->getMessage());
             $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
             $headers = [
                 "From: {$remetente}",
@@ -154,6 +156,7 @@ class EmailService
 
             return true;
         } catch (\Throwable $e) {
+            error_log('Falha SMTP ao enviar resposta do ticket: ' . $e->getMessage());
             $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
             $headers = [
                 "From: {$remetente}",

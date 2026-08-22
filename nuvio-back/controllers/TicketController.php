@@ -268,12 +268,15 @@ class TicketController extends BaseController
                 $ticketCompleto->idTicket = (int) $this->ticket->idTicket;
                 if ($ticketCompleto->getById() && !empty($ticketCompleto->emailUsuario)) {
                     $emailService = new EmailService();
-                    $emailService->enviarNovoTicket(
+                    $emailEnviado = $emailService->enviarNovoTicket(
                         $ticketCompleto->emailUsuario,
                         $ticketCompleto->nomeUsuario ?? 'usuário',
                         (int) $ticketCompleto->idTicket,
                         $ticketCompleto->titulo ?? ''
                     );
+                    if (!$emailEnviado) {
+                        error_log("Não foi possível enviar o e-mail do ticket #{$this->ticket->idTicket}.");
+                    }
                 }
             } catch (Throwable $e) {
                 // don't break creation flow on email errors
