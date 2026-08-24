@@ -34,6 +34,12 @@ function responderErroInterno(Throwable $erro): void
         'sucesso' => false,
         'erro' => 'Erro interno ao iniciar a API.',
         'requestId' => $requestId,
+        'diagnostico' => [
+            'tipo' => get_class($erro),
+            'codigo' => (string) $erro->getCode(),
+            'arquivo' => basename($erro->getFile()),
+            'linha' => $erro->getLine(),
+        ],
     ], JSON_UNESCAPED_UNICODE);
 }
 
