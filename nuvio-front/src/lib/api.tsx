@@ -34,10 +34,14 @@ export async function apiFetch<T>(caminho: string, opcoes: RequestInit = {}): Pr
 
     const dados = await resposta.json().catch(() => ({}));
     if (!resposta.ok) {
+      const referencia = dados.requestId ? ` Referência: ${dados.requestId}.` : "";
+      const diagnostico = dados.diagnostico
+        ? ` (${dados.diagnostico.tipo} em ${dados.diagnostico.arquivo}:${dados.diagnostico.linha})`
+        : "";
       if (resposta.status === 401) {
-        throw new Error(dados.erro || "Sessão expirada ou não autenticada. Faça login novamente.");
+        throw new Error(`${dados.erro || "Sessão expirada ou não autenticada. Faça login novamente."}${referencia}${diagnostico}`);
       }
-      throw new Error(dados.erro || `Erro na requisição (${resposta.status}).`);
+      throw new Error(`${dados.erro || `Erro na requisição (${resposta.status}).`}${referencia}${diagnostico}`);
     }
 
     return dados as T;
