@@ -3,36 +3,51 @@
 require_once __DIR__ . '/../config/env.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 class EmailService
 {
     private function createMailer(): PHPMailer
     {
         $mail = new PHPMailer(true);
+        $timeout = max(1, (int) env('MAIL_TIMEOUT', 8));
+        $mail->Timeout = $timeout;
+        $mail->Timelimit = $timeout;
 
         $host = env('MAIL_HOST', '');
         $port = (int) env('MAIL_PORT', 587);
         $username = env('MAIL_USERNAME', '');
-        $password = env('MAIL_PASSWORD', '');
-        $from = env('MAIL_FROM', 'no-reply@nuvio.local');
+        $password = preg_replace('/\s+/', '', (string) env('MAIL_PASSWORD', ''));
+        $from = env('MAIL_FROM', '');
         $fromName = env('MAIL_FROM_NAME', env('APP_NAME', 'Nuvio'));
         $encryption = env('MAIL_ENCRYPTION', 'tls');
 
-        if ($host !== '') {
-            // Configure SMTP
-            $mail->isSMTP();
-            $mail->Host = $host;
-            $mail->Port = $port;
-            $mail->SMTPAuth = $username !== '' && $password !== '';
-            if ($mail->SMTPAuth) {
-                $mail->Username = $username;
-                $mail->Password = $password;
+        $camposAusentes = [];
+        foreach ([
+            'MAIL_HOST' => $host,
+            'MAIL_USERNAME' => $username,
+            'MAIL_PASSWORD' => $password,
+            'MAIL_FROM' => $from,
+        ] as $campo => $valor) {
+            if (trim((string) $valor) === '') {
+                $camposAusentes[] = $campo;
             }
+        }
 
-            if (in_array(strtolower($encryption), ['ssl', 'tls'], true)) {
-                $mail->SMTPSecure = $encryption;
-            }
+        if ($camposAusentes !== []) {
+            throw new RuntimeException(
+                'Configuração SMTP incompleta: ' . implode(', ', $camposAusentes)
+            );
+        }
+
+        $mail->isSMTP();
+        $mail->Host = $host;
+        $mail->Port = $port;
+        $mail->SMTPAuth = true;
+        $mail->Username = $username;
+        $mail->Password = $password;
+
+        if (in_array(strtolower($encryption), ['ssl', 'tls'], true)) {
+            $mail->SMTPSecure = strtolower($encryption);
         }
 
         $mail->setFrom($from, $fromName);
@@ -73,15 +88,9 @@ class EmailService
             $mail->send();
 
             return true;
-        } catch (Exception $e) {
-            // fallback to mail()
-            $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
-            $headers = [
-                "From: {$remetente}",
-                "Content-Type: text/plain; charset=UTF-8",
-            ];
-
-            return mail($destinatario, $assunto, $mensagem, implode("\r\n", $headers));
+        } catch (\Throwable $e) {
+            error_log('Falha SMTP ao enviar atualização do ticket: ' . $e->getMessage());
+            return false;
         }
     }
 
@@ -113,14 +122,45 @@ class EmailService
             $mail->send();
 
             return true;
-        } catch (Exception $e) {
-            $remetente = env('MAIL_FROM', 'no-reply@nuvio.local');
-            $headers = [
-                "From: {$remetente}",
-                "Content-Type: text/plain; charset=UTF-8",
-            ];
+        } catch (\Throwable $e) {
+            error_log('Falha SMTP ao enviar criação do ticket: ' . $e->getMessage());
+            return false;
+        }
+    }
 
-            return mail($destinatario, $assunto, $mensagem, implode("\r\n", $headers));
+    public function enviarRespostaTicket(
+        string $destinatario,
+        string $nomeUsuario,
+        int $idTicket,
+        string $tituloTicket,
+        string $mensagem,
+        string $assunto = ''
+    ): bool {
+        if (!filter_var($destinatario, FILTER_VALIDATE_EMAIL) || trim($mensagem) === '') {
+            return false;
+        }
+
+        $appName = env('APP_NAME', 'Nuvio');
+        $assunto = trim($assunto) !== ''
+            ? trim($assunto)
+            : "Re: {$tituloTicket} (#{$idTicket})";
+
+        $corpo = "Olá, {$nomeUsuario}.\n\n" . trim($mensagem) . "\n\n" .
+            "---\n" .
+            "Chamado #{$idTicket}: {$tituloTicket}\n" .
+            "Atenciosamente,\n{$appName}";
+
+        try {
+            $mail = $this->createMailer();
+            $mail->addAddress($destinatario, $nomeUsuario);
+            $mail->Subject = $assunto;
+            $mail->Body = $corpo;
+            $mail->send();
+
+            return true;
+        } catch (\Throwable $e) {
+            error_log('Falha SMTP ao enviar resposta do ticket: ' . $e->getMessage());
+            return false;
         }
     }
 
@@ -143,7 +183,12 @@ class EmailService
             $mail->Body = $mensagem;
             $mail->send();
             return true;
+<<<<<<< HEAD
         } catch (Throwable $e) {
+=======
+        } catch (\Throwable $e) {
+            error_log('Falha SMTP ao enviar boas-vindas: ' . $e->getMessage());
+>>>>>>> a48e2c5671277fab97e768a750ea47ac9daa22ad
             return false;
         }
     }

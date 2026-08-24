@@ -1,6 +1,5 @@
-const DEFAULT_API_URL = "http://localhost:8000";
-
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(/\/$/, "");
+export { API_URL } from "./api-url";
+import { API_URL } from "./api-url";
 
 function tokenAtual(): string | null {
   if (typeof document === "undefined") return null;
@@ -42,9 +41,15 @@ export async function apiFetch<T>(caminho: string, opcoes: RequestInit = {}): Pr
     }
 
     return dados as T;
-  } catch (err: any) {
-    if (err.message && err.message.includes("Failed to fetch")) {
-      throw new Error("Não foi possível conectar ao servidor backend. Verifique se o PHP está em execução.");
+  } catch (err: unknown) {
+    const mensagemErro = err instanceof Error ? err.message : String(err);
+    if (
+      err instanceof TypeError ||
+      /Failed to fetch|NetworkError|Load failed/i.test(mensagemErro)
+    ) {
+      throw new Error(
+        `Não foi possível acessar o backend em ${API_URL}. Verifique o serviço do backend no Render e a configuração de CORS.`
+      );
     }
     throw err;
   }

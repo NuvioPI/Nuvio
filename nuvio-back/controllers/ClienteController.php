@@ -92,12 +92,21 @@ class ClienteController extends BaseController
 
             $emailEnviado = false;
             if ($preferencias['emailBoasVindas']) {
+<<<<<<< HEAD
                 try {
                     $emailEnviado = (new EmailService())->enviarBoasVindasCliente($email, $this->usuario->nome);
                 } catch (Throwable $erroEmail) {
                     // O cadastro já foi confirmado. Falha no serviço de e-mail não pode
                     // alterar o resultado da operação nem impedir a resposta de sucesso.
                     error_log('Falha ao enviar boas-vindas para cliente: ' . $erroEmail->getMessage());
+=======
+                // O envio é complementar: uma falha de SMTP não pode desfazer
+                // nem mascarar um cadastro já confirmado no banco.
+                try {
+                    $emailEnviado = (new EmailService())->enviarBoasVindasCliente($email, $this->usuario->nome);
+                } catch (Throwable $erroEmail) {
+                    error_log(sprintf('Cliente %s criado, mas o e-mail de boas-vindas falhou: %s', $email, $erroEmail->getMessage()));
+>>>>>>> a48e2c5671277fab97e768a750ea47ac9daa22ad
                 }
             }
 
@@ -110,10 +119,20 @@ class ClienteController extends BaseController
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
+<<<<<<< HEAD
             error_log('Falha ao cadastrar cliente: ' . $e->getMessage());
+=======
+            error_log(sprintf(
+                'Erro ao cadastrar cliente "%s": %s em %s:%d',
+                $email,
+                $e->getMessage(),
+                $e->getFile(),
+                $e->getLine()
+            ));
+>>>>>>> a48e2c5671277fab97e768a750ea47ac9daa22ad
             $mensagem = $e instanceof PDOException
-                ? 'Não foi possível preparar o banco para salvar o perfil do cliente.'
-                : 'Não foi possível cadastrar o cliente.';
+                ? 'Não foi possível salvar o cliente no banco de dados. Verifique a estrutura de clientes e tente novamente.'
+                : 'Não foi possível cadastrar o cliente. Tente novamente em instantes.';
             $this->respond(['erro' => $mensagem], 500);
         }
     }
@@ -125,6 +144,25 @@ class ClienteController extends BaseController
              SELECT 'Cliente'
              WHERE NOT EXISTS (SELECT 1 FROM tipoUsuario WHERE descricao = 'Cliente')"
         );
+
+        // Não execute DDL em todo cadastro. Em bancos já migrados, a conta da
+        // aplicação normalmente tem INSERT/UPDATE, mas não tem permissão CREATE.
+        $tabelas = ['ClientePerfil', 'ClienteTag', 'ClientePerfilTag'];
+        $consultaTabela = $this->db->prepare(
+            'SELECT COUNT(*) FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+        );
+        $faltamTabelas = [];
+        foreach ($tabelas as $tabela) {
+            $consultaTabela->execute([$tabela]);
+            if ((int) $consultaTabela->fetchColumn() === 0) {
+                $faltamTabelas[] = $tabela;
+            }
+        }
+
+        if ($faltamTabelas === []) {
+            return;
+        }
 
         $this->db->exec(
             'CREATE TABLE IF NOT EXISTS ClientePerfil (
@@ -169,7 +207,8 @@ class ClienteController extends BaseController
         $buscarTag = $this->db->prepare('SELECT idClienteTag FROM ClienteTag WHERE nome = ? LIMIT 1');
         $vincular = $this->db->prepare('INSERT IGNORE INTO ClientePerfilTag (idUsuario, idClienteTag) VALUES (?, ?)');
 
-        foreach (array_unique($tags) as $tag) {
+        $tagsValidas = array_filter($tags, static fn($tag) => is_scalar($tag));
+        foreach (array_unique($tagsValidas) as $tag) {
             $nome = $this->texto($tag, 50);
             if ($nome === '') continue;
             $inserirTag->execute([$nome]);
@@ -181,7 +220,10 @@ class ClienteController extends BaseController
 
     private function texto($valor, int $limite): string
     {
-        return mb_substr(trim(is_scalar($valor) ? (string) $valor : ''), 0, $limite);
+        $texto = trim(is_scalar($valor) ? (string) $valor : '');
+        return function_exists('mb_substr')
+            ? mb_substr($texto, 0, $limite)
+            : substr($texto, 0, $limite);
     }
 
     private function booleano($valor): int

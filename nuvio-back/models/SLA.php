@@ -19,7 +19,7 @@ class SLA
     public function getAll()
     {
         $query = "
-            SELECT idSLA, nomeSLA, tempoResposta, tempoResolucao, descricao
+            SELECT idSLA, nomeSLA, tempoRespostaMinutos AS tempoResposta, tempoResolucaoMinutos AS tempoResolucao, descricao
             FROM " . $this->tabela . "
             ORDER BY tempoResolucao ASC
         ";
@@ -33,7 +33,7 @@ class SLA
     public function getById()
     {
         $query = "
-            SELECT idSLA, nomeSLA, tempoResposta, tempoResolucao, descricao
+            SELECT idSLA, nomeSLA, tempoRespostaMinutos AS tempoResposta, tempoResolucaoMinutos AS tempoResolucao, descricao
             FROM " . $this->tabela . "
             WHERE idSLA = :idSLA
             LIMIT 1
@@ -69,7 +69,7 @@ class SLA
         }
 
         $query = "
-            INSERT INTO " . $this->tabela . " (nomeSLA, tempoResposta, tempoResolucao, descricao)
+            INSERT INTO " . $this->tabela . " (nomeSLA, tempoRespostaMinutos, tempoResolucaoMinutos, descricao)
             VALUES (:nomeSLA, :tempoResposta, :tempoResolucao, :descricao)
         ";
 
@@ -101,8 +101,8 @@ class SLA
         $query = "
             UPDATE " . $this->tabela . "
             SET nomeSLA        = :nomeSLA,
-                tempoResposta  = :tempoResposta,
-                tempoResolucao = :tempoResolucao,
+                tempoRespostaMinutos  = :tempoResposta,
+                tempoResolucaoMinutos = :tempoResolucao,
                 descricao      = :descricao
             WHERE idSLA = :idSLA
         ";

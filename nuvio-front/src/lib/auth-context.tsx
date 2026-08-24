@@ -61,17 +61,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const tokenSalvo = getCookie('token') || (typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null);
     const usuarioSalvo = typeof localStorage !== 'undefined' ? localStorage.getItem('usuario') : null;
 
-    if (tokenSalvo) {
-      setToken(tokenSalvo);
-      if (usuarioSalvo) {
-        try {
-          setUsuario(JSON.parse(usuarioSalvo));
-        } catch {
-          // ignore JSON parse error
+    async function validarSessao() {
+      if (!tokenSalvo) {
+        setCarregando(false);
+        return;
+      }
+
+      try {
+        const resposta = await fetch(`${API_URL}/auth/verificar`, {
+          headers: { Authorization: `Bearer ${tokenSalvo}` },
+          cache: 'no-store',
+        });
+        const dados = await resposta.json().catch(() => ({}));
+
+        if (!resposta.ok || !dados.usuario) {
+          throw new Error('Sessão inválida');
         }
+
+        setToken(tokenSalvo);
+        setUsuario(dados.usuario);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('usuario', JSON.stringify(dados.usuario));
+        }
+      } catch {
+        removerCookie('token');
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('usuario');
+        }
+        setToken(null);
+        setUsuario(null);
+      } finally {
+        setCarregando(false);
       }
     }
-    setCarregando(false);
+
+    void validarSessao();
   }, []);
 
   async function login(
@@ -100,7 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { sucesso: false, erro: data.erro || 'Erro ao fazer login' };
       }
 
-      const tipoNome = typeof data.usuario.tipo === 'object' && data.usuario.tipo !== null ? data.usuario.tipo.nome : data.usuario.tipo;
+      const tipoNome = typeof data.usuario.tipo === 'object' && data.usuario.tipo !== null
+        ? data.usuario.tipo.nome
+        : data.usuario.tipo;
       if (opcoes.somenteAdministrador && tipoNome !== 'Administrador') {
         return { sucesso: false, erro: 'Acesso restrito a administradores.' };
       }

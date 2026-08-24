@@ -37,7 +37,7 @@ const metrics = [
 const actions = [
   {
     label: "Cadastrar cliente",
-    desc: "Registra novo contato no Freshdesk com dados completos e tags.",
+    desc: "Registra um novo cliente com dados completos e tags.",
     href: "/admin/dashboard/RegisterUsers",
     icon: "user-plus",
     bg: "#eaf3de",
@@ -45,17 +45,9 @@ const actions = [
     featured: true,
   },
   {
-    label: "Editar Freshdesk",
-    desc: "Atualiza dados de contatos, grupos, campos e configurações.",
-    href: "/admin/freshdesk",
-    icon: "edit",
-    bg: "#e6f1fb",
-    ic: "#185fa5",
-  },
-  {
     label: "Relatórios",
     desc: "Visualiza métricas, exporta dados e acompanha KPIs do suporte.",
-    href: "/admin/relatorios",
+    href: "/reports",
     icon: "chart-bar",
     bg: "#faeeda",
     ic: "#854f0b",
@@ -63,7 +55,7 @@ const actions = [
   {
     label: "Gerenciar tickets",
     desc: "Triagem, atribuição e resolução de chamados do suporte.",
-    href: "/admin/tickets",
+    href: "/tickets",
     icon: "ticket",
     bg: "#fcebeb",
     ic: "#a32d2d",
@@ -71,7 +63,7 @@ const actions = [
   {
     label: "Usuários e permissões",
     desc: "Gerencia agentes, funções e níveis de acesso ao sistema.",
-    href: "/admin/usuarios",
+    href: "/users",
     icon: "users",
     bg: "#eeedfe",
     ic: "#534ab7",
@@ -79,7 +71,7 @@ const actions = [
   {
     label: "Base de conhecimento",
     desc: "Cria e edita artigos, FAQs e documentação para clientes.",
-    href: "/admin/conhecimento",
+    href: "/knowledge-base",
     icon: "book",
     bg: "#e1f5ee",
     ic: "#0f6e56",
@@ -87,7 +79,7 @@ const actions = [
   {
     label: "Automações e SLA",
     desc: "Configura regras automáticas, escalonamento e prazos de SLA.",
-    href: "/admin/automacoes",
+    href: "/sla",
     icon: "bolt",
     bg: "#fbeaf0",
     ic: "#993556",
@@ -95,7 +87,7 @@ const actions = [
   {
     label: "Integrações",
     desc: "Conecta webhooks, APIs externas e apps de terceiros.",
-    href: "/admin/integracoes",
+    href: "/integracoes",
     icon: "plug",
     bg: "#f1efe8",
     ic: "#5f5e5a",
@@ -103,7 +95,7 @@ const actions = [
   {
     label: "Configurações",
     desc: "Preferências gerais, notificações, domínio e tema do portal.",
-    href: "/admin/configuracoes",
+    href: "/settings",
     icon: "settings",
     bg: "#f1efe8",
     ic: "#888780",

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { API_URL } from "@/lib/api-url";
 
-const PROTECTED_PATHS = ["/admin", "/dashboard", "/tickets", "/users", "/reports", "/settings", "/perfil", "/portal/chamados", "/portal/chat"];
+const PROTECTED_PATHS = ["/admin", "/dashboard", "/tickets", "/users", "/reports", "/settings", "/sla", "/integracoes", "/perfil", "/portal/chamados", "/portal/chat"];
 const PUBLIC_ADMIN_PATHS = ["/admin/login"];
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -66,5 +66,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login", "/admin/:path*", "/dashboard/:path*", "/tickets/:path*", "/users/:path*", "/reports/:path*", "/settings/:path*", "/perfil/:path*", "/portal/chamados/:path*", "/portal/chat/:path*"],
+  matcher: ["/login", "/admin/:path*", "/dashboard/:path*", "/tickets/:path*", "/users/:path*", "/reports/:path*", "/settings/:path*", "/sla/:path*", "/integracoes/:path*", "/perfil/:path*", "/portal/chamados/:path*", "/portal/chat/:path*"],
 };

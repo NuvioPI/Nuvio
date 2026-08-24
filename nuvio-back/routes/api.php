@@ -190,6 +190,8 @@ if ($recurso === 'tickets') {
         $controller->historico($id);
     } elseif ($method === 'GET' && $id && !$subrecurso) {
         $controller->show($id);
+    } elseif ($method === 'POST' && $id && $subrecurso === 'responder-email') {
+        $controller->responderEmail($id);
     } elseif ($method === 'POST' && $segmentoId === null) {
         $controller->store();
     } elseif ($method === 'PUT' && !$subrecurso) {
