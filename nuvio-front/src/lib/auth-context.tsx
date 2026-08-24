@@ -111,18 +111,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, senha }),
       });
 
-      let data: { sucesso?: boolean; erro?: string; token?: string; usuario?: Usuario } = {};
+      const respostaTexto = await res.text();
+      let data: {
+        sucesso?: boolean;
+        erro?: string;
+        requestId?: string;
+        token?: string;
+        usuario?: Usuario;
+      } = {};
+
       try {
-        data = await res.json();
+        data = respostaTexto ? JSON.parse(respostaTexto) : {};
       } catch {
         return {
           sucesso: false,
-          erro: `Resposta inválida do servidor (${res.status}). Verifique se o backend PHP está rodando.`,
+          erro: res.ok
+            ? 'O servidor retornou uma resposta inválida.'
+            : `O backend retornou erro ${res.status} sem uma resposta JSON válida.`,
         };
       }
 
       if (!res.ok || !data.token || !data.usuario) {
-        return { sucesso: false, erro: data.erro || 'Erro ao fazer login' };
+        const referencia = data.requestId ? ` Referência: ${data.requestId}.` : '';
+        return {
+          sucesso: false,
+          erro: `${data.erro || `Erro do servidor (${res.status}).`}${referencia}`,
+        };
       }
 
       const tipoNome = typeof data.usuario.tipo === 'object' && data.usuario.tipo !== null

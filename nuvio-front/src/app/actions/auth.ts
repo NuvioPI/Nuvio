@@ -22,10 +22,27 @@ export async function loginAction(formData: FormData) {
       body: JSON.stringify({ email, senha: password }),
     });
 
-    const data = await response.json();
+    const respostaTexto = await response.text();
+    let data: {
+      erro?: string;
+      requestId?: string;
+      token?: string;
+      usuario?: { tipo?: { nome?: string } | string };
+    } = {};
+
+    try {
+      data = respostaTexto ? JSON.parse(respostaTexto) : {};
+    } catch {
+      return {
+        error: response.ok
+          ? "O servidor retornou uma resposta inválida."
+          : `O backend retornou erro ${response.status} sem uma resposta JSON válida.`,
+      };
+    }
 
     if (!response.ok || !data.token || !data.usuario) {
-      return { error: data.erro || "Credenciais inválidas." };
+      const referencia = data.requestId ? ` Referência: ${data.requestId}.` : "";
+      return { error: `${data.erro || "Credenciais inválidas."}${referencia}` };
     }
 
     const tipoNome = typeof data.usuario.tipo === "object" && data.usuario.tipo !== null
