@@ -183,12 +183,8 @@ class EmailService
             $mail->Body = $mensagem;
             $mail->send();
             return true;
-<<<<<<< HEAD
-        } catch (Throwable $e) {
-=======
         } catch (\Throwable $e) {
             error_log('Falha SMTP ao enviar boas-vindas: ' . $e->getMessage());
->>>>>>> a48e2c5671277fab97e768a750ea47ac9daa22ad
             return false;
         }
     }

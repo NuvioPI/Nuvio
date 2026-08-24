@@ -92,21 +92,12 @@ class ClienteController extends BaseController
 
             $emailEnviado = false;
             if ($preferencias['emailBoasVindas']) {
-<<<<<<< HEAD
-                try {
-                    $emailEnviado = (new EmailService())->enviarBoasVindasCliente($email, $this->usuario->nome);
-                } catch (Throwable $erroEmail) {
-                    // O cadastro já foi confirmado. Falha no serviço de e-mail não pode
-                    // alterar o resultado da operação nem impedir a resposta de sucesso.
-                    error_log('Falha ao enviar boas-vindas para cliente: ' . $erroEmail->getMessage());
-=======
                 // O envio é complementar: uma falha de SMTP não pode desfazer
                 // nem mascarar um cadastro já confirmado no banco.
                 try {
                     $emailEnviado = (new EmailService())->enviarBoasVindasCliente($email, $this->usuario->nome);
                 } catch (Throwable $erroEmail) {
                     error_log(sprintf('Cliente %s criado, mas o e-mail de boas-vindas falhou: %s', $email, $erroEmail->getMessage()));
->>>>>>> a48e2c5671277fab97e768a750ea47ac9daa22ad
                 }
             }
 
@@ -119,9 +110,6 @@ class ClienteController extends BaseController
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
-<<<<<<< HEAD
-            error_log('Falha ao cadastrar cliente: ' . $e->getMessage());
-=======
             error_log(sprintf(
                 'Erro ao cadastrar cliente "%s": %s em %s:%d',
                 $email,
@@ -129,7 +117,6 @@ class ClienteController extends BaseController
                 $e->getFile(),
                 $e->getLine()
             ));
->>>>>>> a48e2c5671277fab97e768a750ea47ac9daa22ad
             $mensagem = $e instanceof PDOException
                 ? 'Não foi possível salvar o cliente no banco de dados. Verifique a estrutura de clientes e tente novamente.'
                 : 'Não foi possível cadastrar o cliente. Tente novamente em instantes.';
