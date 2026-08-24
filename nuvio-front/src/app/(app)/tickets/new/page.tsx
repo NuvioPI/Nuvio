@@ -1,12 +1,13 @@
 "use client";
 
 import {
+  FileText,
   Upload,
   Plus,
+  X,
 } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
@@ -18,8 +19,7 @@ type Sla = { idSLA: number; nomeSLA: string };
 type Option = { value: string; label: string };
 
 export default function NovoChamadoPage() {
-  const router = useRouter();
-  const { usuario } = useAuth();
+  const { usuario, carregando: carregandoSessao } = useAuth();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -36,13 +36,31 @@ export default function NovoChamadoPage() {
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
+  const [aviso, setAviso] = useState("");
   const [sucesso, setSucesso] = useState<number | null>(null);
+  const [arquivos, setArquivos] = useState<File[]>([]);
+
+  const tipoUsuario = typeof usuario?.tipo === "object" && usuario.tipo !== null
+    ? usuario.tipo.nome
+    : usuario?.tipo;
+  const administrador = tipoUsuario === "Administrador";
+
+  const categoriaSelecionada = useMemo(
+    () => categorias.find((categoria) => String(categoria.idCategoria) === form.idCategoria),
+    [categorias, form.idCategoria],
+  );
+  const tecnicoSelecionado = useMemo(
+    () => tecnicos.find((tecnico) => String(tecnico.idTecnico) === form.idTecnico),
+    [tecnicos, form.idTecnico],
+  );
 
   useEffect(() => {
+    if (carregandoSessao || !usuario) return;
+
     Promise.all([
-      usuario?.tipo === "Administrador"
+      administrador
         ? apiFetch<{ usuarios: Usuario[] }>("/usuarios")
-        : Promise.resolve({ usuarios: usuario ? [{ idUsuario: usuario.id, nome: usuario.nome, email: usuario.email }] : [] }),
+        : Promise.resolve({ usuarios: [{ idUsuario: usuario.id, nome: usuario.nome, email: usuario.email }] }),
       apiFetch<{ tecnicos: Tecnico[] }>("/tecnicos?ativos=1"),
       apiFetch<{ categorias: Categoria[] }>("/categorias"),
       apiFetch<{ slas: Sla[] }>("/sla"),
@@ -52,6 +70,18 @@ export default function NovoChamadoPage() {
         setTecnicos(tecnicosRes.tecnicos ?? []);
         setCategorias(categoriasRes.categorias ?? []);
         setSlas(slasRes.slas ?? []);
+
+        const configuracoesAusentes = [
+          !(usuariosRes.usuarios?.length) && "solicitantes",
+          !(tecnicosRes.tecnicos?.length) && "técnicos ativos",
+          !(categoriasRes.categorias?.length) && "categorias",
+          !(slasRes.slas?.length) && "SLAs",
+        ].filter(Boolean);
+
+        if (configuracoesAusentes.length > 0) {
+          setErro(`Não há ${configuracoesAusentes.join(", ")} disponíveis. Configure esses dados antes de criar um chamado.`);
+        }
+
         setForm((atual) => ({
           ...atual,
           idUsuario: String(usuariosRes.usuarios?.[0]?.idUsuario ?? ""),
@@ -62,7 +92,7 @@ export default function NovoChamadoPage() {
       })
       .catch((cause) => setErro(cause instanceof Error ? cause.message : "Não foi possível carregar os dados do formulário."))
       .finally(() => setCarregando(false));
-  }, [usuario]);
+  }, [administrador, carregandoSessao, usuario]);
 
   function atualizar(campo: keyof typeof form, valor: string) {
     setForm((atual) => ({ ...atual, [campo]: valor }));
@@ -71,7 +101,14 @@ export default function NovoChamadoPage() {
   async function criarChamado(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErro("");
+    setAviso("");
     setSucesso(null);
+
+    if (!form.idUsuario || !form.idTecnico || !form.idCategoria || !form.idSLA) {
+      setErro("Selecione solicitante, responsável, categoria e SLA.");
+      return;
+    }
+
     setEnviando(true);
 
     try {
@@ -85,12 +122,44 @@ export default function NovoChamadoPage() {
           idSLA: Number(form.idSLA),
         }),
       });
+
+      const falhas: string[] = [];
+      for (const arquivo of arquivos) {
+        const dados = new FormData();
+        dados.append("arquivo", arquivo);
+        dados.append("idTicket", String(resposta.idTicket));
+
+        try {
+          await apiFetch("/upload/anexo", { method: "POST", body: dados });
+        } catch (cause) {
+          falhas.push(cause instanceof Error ? cause.message : arquivo.name);
+        }
+      }
+
       setSucesso(resposta.idTicket);
+      if (falhas.length > 0) {
+        setAviso(`O chamado foi criado, mas ${falhas.length} anexo(s) não puderam ser enviado(s).`);
+      }
     } catch (cause) {
       setErro(cause instanceof Error ? cause.message : "Não foi possível criar o chamado.");
     } finally {
       setEnviando(false);
     }
+  }
+
+  function selecionarArquivos(event: ChangeEvent<HTMLInputElement>) {
+    const selecionados = Array.from(event.target.files ?? []);
+    const invalidos = selecionados.filter((arquivo) => arquivo.size > 25 * 1024 * 1024);
+
+    if (invalidos.length > 0) {
+      setErro("Cada anexo deve ter no máximo 25 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    setErro("");
+    setArquivos((atuais) => [...atuais, ...selecionados].slice(0, 5));
+    event.target.value = "";
   }
 
   return (
@@ -189,10 +258,6 @@ export default function NovoChamadoPage() {
                   disabled={carregando}
                 />
 
-                <Select 
-                  label="Localização" 
-                  options={["Matriz", "Filial SP", "Filial RJ", "Home Office", "Terceiros"].map((localizacao) => ({ value: localizacao, label: localizacao }))}
-                />
               </div>
 
               {/* TEXTAREA */}
@@ -232,6 +297,7 @@ export default function NovoChamadoPage() {
               </div>
 
               {erro && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-500">Não foi possível criar o chamado: {erro}</p>}
+              {aviso && <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-600">{aviso}</p>}
               {sucesso && (
                 <div role="status" className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-500">
                   <p className="font-semibold">Chamado #{sucesso} criado com sucesso!</p>
@@ -248,7 +314,7 @@ export default function NovoChamadoPage() {
                   Anexos
                 </label>
 
-                <div
+                <label
                   className="
                     border
                     border-dashed
@@ -295,15 +361,14 @@ export default function NovoChamadoPage() {
                   </div>
 
                   <h3 className="text-lg font-semibold">
-                    Arraste arquivos aqui
+                    Clique para selecionar arquivos
                   </h3>
 
                   <p className="text-sm text-[var(--muted-foreground)] mt-2">
-                    PNG, JPG, PDF, DOCX até 10MB
+                    Até 5 arquivos, com no máximo 25 MB cada
                   </p>
 
-                  <button
-                    type="button"
+                  <span
                     className="
                       mt-6
 
@@ -324,8 +389,30 @@ export default function NovoChamadoPage() {
                     "
                   >
                     Selecionar arquivos
-                  </button>
-                </div>
+                  </span>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar"
+                    onChange={selecionarArquivos}
+                    className="sr-only"
+                  />
+                </label>
+
+                {arquivos.length > 0 && (
+                  <ul className="mt-4 space-y-2">
+                    {arquivos.map((arquivo, indice) => (
+                      <li key={`${arquivo.name}-${arquivo.lastModified}`} className="flex items-center gap-3 rounded-xl border border-[var(--border)] px-4 py-3 text-sm">
+                        <FileText size={18} className="shrink-0 text-green-500" />
+                        <span className="min-w-0 flex-1 truncate">{arquivo.name}</span>
+                        <span className="text-xs text-[var(--muted-foreground)]">{(arquivo.size / 1024 / 1024).toFixed(1)} MB</span>
+                        <button type="button" onClick={() => setArquivos((atuais) => atuais.filter((_, atual) => atual !== indice))} aria-label={`Remover ${arquivo.name}`} className="rounded-lg p-1 hover:bg-[var(--muted)]">
+                          <X size={16} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </section>
 
@@ -351,18 +438,18 @@ export default function NovoChamadoPage() {
                 <div className="space-y-5">
                   <SummaryItem
                     label="Prioridade"
-                    value="Alta"
-                    type="danger"
+                    value={form.prioridade === "Media" ? "Média" : form.prioridade}
+                    type={form.prioridade === "Alta" ? "danger" : undefined}
                   />
 
                   <SummaryItem
                     label="Categoria"
-                    value="Software"
+                    value={categoriaSelecionada?.nomeCategoria ?? "Não selecionada"}
                   />
 
                   <SummaryItem
                     label="Responsável"
-                    value="Não atribuído"
+                    value={tecnicoSelecionado?.nomeUsuario || tecnicoSelecionado?.nome || "Não atribuído"}
                   />
 
                   <SummaryItem
@@ -411,7 +498,7 @@ export default function NovoChamadoPage() {
                 {/* BUTTON */}
                 <button
                   type="submit"
-                  disabled={carregando || enviando || sucesso !== null || !form.idUsuario || !form.idTecnico || !form.idCategoria || !form.idSLA}
+                  disabled={carregando || carregandoSessao || enviando || sucesso !== null || !form.idUsuario || !form.idTecnico || !form.idCategoria || !form.idSLA}
                   className="
                     mt-8
                     w-full
