@@ -1,10 +1,8 @@
 "use client";
 
 import {
-  FileText,
   Upload,
   Plus,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
@@ -39,11 +37,7 @@ export default function NovoChamadoPage() {
   const [aviso, setAviso] = useState("");
   const [sucesso, setSucesso] = useState<number | null>(null);
   const [arquivos, setArquivos] = useState<File[]>([]);
-
-  const tipoUsuario = typeof usuario?.tipo === "object" && usuario.tipo !== null
-    ? usuario.tipo.nome
-    : usuario?.tipo;
-  const administrador = tipoUsuario === "Administrador";
+  const [emailSolicitante, setEmailSolicitante] = useState("");
 
   const categoriaSelecionada = useMemo(
     () => categorias.find((categoria) => String(categoria.idCategoria) === form.idCategoria),
@@ -57,25 +51,18 @@ export default function NovoChamadoPage() {
   useEffect(() => {
     if (carregandoSessao || !usuario) return;
 
-    Promise.all([
-      administrador
-        ? apiFetch<{ usuarios: Usuario[] }>("/usuarios")
-        : Promise.resolve({ usuarios: [{ idUsuario: usuario.id, nome: usuario.nome, email: usuario.email }] }),
-      apiFetch<{ tecnicos: Tecnico[] }>("/tecnicos?ativos=1"),
-      apiFetch<{ categorias: Categoria[] }>("/categorias"),
-      apiFetch<{ slas: Sla[] }>("/sla"),
-    ])
-      .then(([usuariosRes, tecnicosRes, categoriasRes, slasRes]) => {
-        setUsuarios(usuariosRes.usuarios ?? []);
-        setTecnicos(tecnicosRes.tecnicos ?? []);
-        setCategorias(categoriasRes.categorias ?? []);
-        setSlas(slasRes.slas ?? []);
+    apiFetch<{ usuarios: Usuario[]; tecnicos: Tecnico[]; categorias: Categoria[]; slas: Sla[] }>("/tickets/opcoes")
+      .then((dados) => {
+        setUsuarios(dados.usuarios ?? []);
+        setTecnicos(dados.tecnicos ?? []);
+        setCategorias(dados.categorias ?? []);
+        setSlas(dados.slas ?? []);
 
         const configuracoesAusentes = [
-          !(usuariosRes.usuarios?.length) && "solicitantes",
-          !(tecnicosRes.tecnicos?.length) && "técnicos ativos",
-          !(categoriasRes.categorias?.length) && "categorias",
-          !(slasRes.slas?.length) && "SLAs",
+          !(dados.usuarios?.length) && "solicitantes",
+          !(dados.tecnicos?.length) && "técnicos ativos",
+          !(dados.categorias?.length) && "categorias",
+          !(dados.slas?.length) && "SLAs",
         ].filter(Boolean);
 
         if (configuracoesAusentes.length > 0) {
@@ -84,18 +71,31 @@ export default function NovoChamadoPage() {
 
         setForm((atual) => ({
           ...atual,
-          idUsuario: String(usuariosRes.usuarios?.[0]?.idUsuario ?? ""),
-          idTecnico: String(tecnicosRes.tecnicos?.[0]?.idTecnico ?? ""),
-          idCategoria: String(categoriasRes.categorias?.[0]?.idCategoria ?? ""),
-          idSLA: String(slasRes.slas?.[0]?.idSLA ?? ""),
+          idUsuario: String(dados.usuarios?.[0]?.idUsuario ?? ""),
+          idTecnico: String(dados.tecnicos?.[0]?.idTecnico ?? ""),
+          idCategoria: String(dados.categorias?.[0]?.idCategoria ?? ""),
+          idSLA: String(dados.slas?.[0]?.idSLA ?? ""),
         }));
+        setEmailSolicitante(dados.usuarios?.[0]?.email ?? "");
       })
       .catch((cause) => setErro(cause instanceof Error ? cause.message : "Não foi possível carregar os dados do formulário."))
       .finally(() => setCarregando(false));
-  }, [administrador, carregandoSessao, usuario]);
+  }, [carregandoSessao, usuario]);
 
   function atualizar(campo: keyof typeof form, valor: string) {
     setForm((atual) => ({ ...atual, [campo]: valor }));
+  }
+
+  function selecionarSolicitante(idUsuario: string) {
+    atualizar("idUsuario", idUsuario);
+    const selecionado = usuarios.find((item) => String(item.idUsuario) === idUsuario);
+    setEmailSolicitante(selecionado?.email ?? "");
+  }
+
+  function atualizarEmail(email: string) {
+    setEmailSolicitante(email);
+    const encontrado = usuarios.find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
+    atualizar("idUsuario", encontrado ? String(encontrado.idUsuario) : "");
   }
 
   async function criarChamado(event: FormEvent<HTMLFormElement>) {
@@ -158,7 +158,7 @@ export default function NovoChamadoPage() {
     }
 
     setErro("");
-    setArquivos((atuais) => [...atuais, ...selecionados].slice(0, 5));
+    setArquivos(selecionados.slice(0, 5));
     event.target.value = "";
   }
 
@@ -212,12 +212,20 @@ export default function NovoChamadoPage() {
                 <Select
                   label="Solicitante"
                   value={form.idUsuario}
-                  onChange={(value) => atualizar("idUsuario", value)}
+                  onChange={selecionarSolicitante}
                   options={usuarios.map((usuario) => ({ value: String(usuario.idUsuario), label: usuario.nome }))}
                   disabled={carregando || usuarios.length === 0}
                 />
 
-                <Input label="E-mail" value={usuarios.find((usuario) => String(usuario.idUsuario) === form.idUsuario)?.email ?? ""} readOnly />
+                <div>
+                  <Input label="E-mail" value={emailSolicitante} onChange={atualizarEmail} list="emails-solicitantes" required />
+                  <datalist id="emails-solicitantes">
+                    {usuarios.map((item) => <option key={item.idUsuario} value={item.email}>{item.nome}</option>)}
+                  </datalist>
+                  {emailSolicitante && !form.idUsuario && (
+                    <p className="mt-2 text-xs text-amber-600">Digite o e-mail completo de um usuário cadastrado.</p>
+                  )}
+                </div>
 
                 <Input
                   label="Título do chamado"
@@ -365,7 +373,9 @@ export default function NovoChamadoPage() {
                   </h3>
 
                   <p className="text-sm text-[var(--muted-foreground)] mt-2">
-                    Até 5 arquivos, com no máximo 25 MB cada
+                    {arquivos.length > 0
+                      ? `${arquivos.length} arquivo(s) selecionado(s): ${arquivos.map((arquivo) => arquivo.name).join(", ")}`
+                      : "Até 5 arquivos, com no máximo 25 MB cada"}
                   </p>
 
                   <span
@@ -399,20 +409,6 @@ export default function NovoChamadoPage() {
                   />
                 </label>
 
-                {arquivos.length > 0 && (
-                  <ul className="mt-4 space-y-2">
-                    {arquivos.map((arquivo, indice) => (
-                      <li key={`${arquivo.name}-${arquivo.lastModified}`} className="flex items-center gap-3 rounded-xl border border-[var(--border)] px-4 py-3 text-sm">
-                        <FileText size={18} className="shrink-0 text-green-500" />
-                        <span className="min-w-0 flex-1 truncate">{arquivo.name}</span>
-                        <span className="text-xs text-[var(--muted-foreground)]">{(arquivo.size / 1024 / 1024).toFixed(1)} MB</span>
-                        <button type="button" onClick={() => setArquivos((atuais) => atuais.filter((_, atual) => atual !== indice))} aria-label={`Remover ${arquivo.name}`} className="rounded-lg p-1 hover:bg-[var(--muted)]">
-                          <X size={16} />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
             </section>
 
@@ -548,6 +544,7 @@ function Input({
   className,
   value = "",
   onChange,
+  list,
   readOnly = false,
   required = false,
 }: {
@@ -555,6 +552,7 @@ function Input({
   className?: string;
   value?: string;
   onChange?: (value: string) => void;
+  list?: string;
   readOnly?: boolean;
   required?: boolean;
 }) {
@@ -568,6 +566,7 @@ function Input({
         placeholder={`Digite ${label.toLowerCase()}`}
         value={value}
         onChange={(event) => onChange?.(event.target.value)}
+        list={list}
         readOnly={readOnly}
         required={required}
         className="

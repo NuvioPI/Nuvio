@@ -51,6 +51,62 @@ class TicketController extends BaseController
     }
 
     /**
+     * GET /tickets/opcoes
+     * Retorna em uma única chamada os dados necessários ao formulário.
+     */
+    public function formOptions()
+    {
+        try {
+            $perfil = $this->db->prepare(
+                'SELECT tu.descricao
+                 FROM Usuario u
+                 INNER JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
+                 WHERE u.idUsuario = ? LIMIT 1'
+            );
+            $perfil->execute([$this->idUsuarioAutenticado]);
+            $tipo = (string) $perfil->fetchColumn();
+
+            if (in_array(normalizarRole($tipo), ['administrador', 'tecnico'], true)) {
+                $usuarios = $this->db->query(
+                    'SELECT idUsuario, nome, email FROM Usuario ORDER BY nome ASC'
+                )->fetchAll(PDO::FETCH_ASSOC);
+            } else {
+                $stmtUsuarios = $this->db->prepare(
+                    'SELECT idUsuario, nome, email FROM Usuario WHERE idUsuario = ? LIMIT 1'
+                );
+                $stmtUsuarios->execute([$this->idUsuarioAutenticado]);
+                $usuarios = $stmtUsuarios->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            $tecnicos = $this->db->query(
+                'SELECT t.idTecnico, t.especialidade, u.nome, u.email
+                 FROM Tecnico t
+                 INNER JOIN Usuario u ON u.idUsuario = t.idUsuario
+                 WHERE t.ativo = TRUE
+                 ORDER BY u.nome ASC'
+            )->fetchAll(PDO::FETCH_ASSOC);
+
+            $categorias = $this->db->query(
+                'SELECT idCategoria, nomeCategoria FROM Categoria ORDER BY nomeCategoria ASC'
+            )->fetchAll(PDO::FETCH_ASSOC);
+
+            $slas = $this->db->query(
+                'SELECT idSLA, nomeSLA FROM SLA ORDER BY nomeSLA ASC'
+            )->fetchAll(PDO::FETCH_ASSOC);
+
+            $this->respond([
+                'usuarios' => $usuarios,
+                'tecnicos' => $tecnicos,
+                'categorias' => $categorias,
+                'slas' => $slas,
+            ]);
+        } catch (Throwable $erro) {
+            error_log('TicketController::formOptions - ' . $erro->getMessage());
+            $this->respond(['erro' => 'Não foi possível carregar as opções do chamado.'], 500);
+        }
+    }
+
+    /**
      * GET /tickets/{id}
      */
     public function show($id)

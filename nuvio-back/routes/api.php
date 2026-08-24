@@ -180,7 +180,9 @@ if ($recurso === 'tickets') {
         (int) $usuarioAutenticado['idUsuario']
     );
     
-    if ($method === 'GET' && $segmentoId === null) {
+    if ($method === 'GET' && $segmentoId === 'opcoes') {
+        $controller->formOptions();
+    } elseif ($method === 'GET' && $segmentoId === null) {
         $controller->index();
     } elseif (
         $method === 'GET' &&
