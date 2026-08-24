@@ -92,7 +92,13 @@ class ClienteController extends BaseController
 
             $emailEnviado = false;
             if ($preferencias['emailBoasVindas']) {
-                $emailEnviado = (new EmailService())->enviarBoasVindasCliente($email, $this->usuario->nome);
+                try {
+                    $emailEnviado = (new EmailService())->enviarBoasVindasCliente($email, $this->usuario->nome);
+                } catch (Throwable $erroEmail) {
+                    // O cadastro já foi confirmado. Falha no serviço de e-mail não pode
+                    // alterar o resultado da operação nem impedir a resposta de sucesso.
+                    error_log('Falha ao enviar boas-vindas para cliente: ' . $erroEmail->getMessage());
+                }
             }
 
             $this->respond([
@@ -104,6 +110,7 @@ class ClienteController extends BaseController
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
+            error_log('Falha ao cadastrar cliente: ' . $e->getMessage());
             $mensagem = $e instanceof PDOException
                 ? 'Não foi possível preparar o banco para salvar o perfil do cliente.'
                 : 'Não foi possível cadastrar o cliente.';

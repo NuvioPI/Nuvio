@@ -143,7 +143,7 @@ class EmailService
             $mail->Body = $mensagem;
             $mail->send();
             return true;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return false;
         }
     }
