@@ -35,9 +35,9 @@ function Toggle({ enabled, onChange, label }: { enabled: boolean; onChange: () =
       aria-checked={enabled}
       aria-label={label}
       onClick={onChange}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${enabled ? "bg-(--primary)" : "bg-(--border)"}`}
+      className={`relative h-6 w-11 shrink-0 overflow-hidden rounded-full transition-colors ${enabled ? "bg-(--primary)" : "bg-(--border)"}`}
     >
-      <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} />
+      <span className={`absolute left-0 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} />
     </button>
   );
 }
