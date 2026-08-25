@@ -335,7 +335,7 @@ export function LiveChatWorkspace({ fullscreen = false }: { fullscreen?: boolean
             </div>
           </form>
         </div>
-        <footer className="border-t border-(--border) bg-(--card) px-5 py-1.5 text-center text-[11px] text-(--muted-foreground)">
+        <footer className="border-t border-(--border) bg-(--card) px-5 py-1.5 text-center text-[11px] text-yellow-500">
           Página em teste
         </footer>
       </section>
