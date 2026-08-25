@@ -12,6 +12,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import { TicketReplyComposer } from "@/components/ticket/TicketReplyComposer";
 import { NuvioName } from "@/components/ui/NuvioBadge";
+import { NewTicketBadge } from "@/components/ui/NewTicketBadge";
 
 type TicketResumoAtendimento = {
   idTicket: number;
@@ -175,8 +176,9 @@ export default function AtendimentoPage() {
                 className={`w-full border-b border-(--border)/70 px-4 py-3 text-left transition ${selectedId === item.idTicket ? "border-l-2 border-l-(--primary) bg-(--primary)/8" : "hover:bg-(--hoverbg)"}`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className={`truncate text-sm font-semibold ${selectedId === item.idTicket ? "text-(--primary)" : "text-(--foreground)"}`}>
-                    #{item.idTicket} · {item.titulo}
+                  <span className={`flex min-w-0 items-center gap-2 ${selectedId === item.idTicket ? "text-(--primary)" : "text-(--foreground)"}`}>
+                    <span className="truncate text-sm font-semibold">#{item.idTicket} · {item.titulo}</span>
+                    <NewTicketBadge dataAbertura={item.dataAbertura} />
                   </span>
                   <span className="shrink-0 text-[10px] text-(--muted-foreground)">{dataCurta(item.dataAbertura)}</span>
                 </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { NuvioName } from "@/components/ui/NuvioBadge";
+import { NewTicketBadge } from "@/components/ui/NewTicketBadge";
 
 type Ticket = {
   idTicket: number;
@@ -85,8 +86,9 @@ export default function RecentTicketsPanel() {
               >
                 <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ background: estilo.dot }} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12px] text-(--foreground)">
-                    #{ticket.idTicket} · {ticket.titulo}
+                  <p className="flex min-w-0 items-center gap-2 text-[12px] text-(--foreground)">
+                    <span className="truncate">#{ticket.idTicket} · {ticket.titulo}</span>
+                    <NewTicketBadge dataAbertura={ticket.dataAbertura} />
                   </p>
                   <p className="text-[11px] text-(--muted-foreground)">
                     {ticket.nomeUsuario ? <NuvioName name={ticket.nomeUsuario} tipo={ticket.tipoUsuario} /> : "Usuário não informado"} · {dataFormatada(ticket.dataAbertura)}

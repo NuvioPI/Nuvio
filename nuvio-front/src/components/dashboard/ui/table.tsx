@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { API_URL } from "@/lib/api";
 import { NuvioName } from "@/components/ui/NuvioBadge";
+import { NewTicketBadge } from "@/components/ui/NewTicketBadge";
 
 export type TicketResumo = {
   idTicket: number;
@@ -81,7 +82,7 @@ export default function Table({ tickets, carregando }: { tickets: TicketResumo[]
             {tickets.map((ticket) => (
               <tr key={ticket.idTicket} className="hover:bg-black/5 border-b border-(--card-border) transition-colors">
                 <td className="py-4 text-(--foreground) pl-4 md:pl-0">#{ticket.idTicket}</td>
-                <td className="py-4 text-(--foreground)">{ticket.titulo}</td>
+                <td className="py-4 text-(--foreground)"><div className="flex min-w-0 items-center gap-2"><span className="truncate">{ticket.titulo}</span><NewTicketBadge dataAbertura={ticket.dataAbertura} /></div></td>
                 <td className="py-4">
                   <div className="flex gap-2 items-center text-(--foreground)">
                     <AvatarUsuario nome={ticket.nomeUsuario} foto={ticket.fotoPerfil} />
