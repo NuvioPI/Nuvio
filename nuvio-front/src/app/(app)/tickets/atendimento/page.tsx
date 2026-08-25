@@ -13,6 +13,7 @@ import { apiFetch } from "@/lib/api";
 import { TicketReplyComposer } from "@/components/ticket/TicketReplyComposer";
 import { NuvioName } from "@/components/ui/NuvioBadge";
 import { NewTicketBadge } from "@/components/ui/NewTicketBadge";
+import { formatarDataBackend } from "@/lib/date-utils";
 
 type TicketResumoAtendimento = {
   idTicket: number;
@@ -327,9 +328,9 @@ function Detail({ label, value, children }: { label: string; value?: string; chi
 }
 
 function dataCurta(data: string) {
-  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(new Date(data));
+  return formatarDataBackend(data, { day: "2-digit", month: "2-digit" });
 }
 
 function dataFormatada(data: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(data));
+  return formatarDataBackend(data);
 }

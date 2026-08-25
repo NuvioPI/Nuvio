@@ -9,6 +9,7 @@ import type { TicketResumo } from "@/components/dashboard/ui/table";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { NuvioName } from "@/components/ui/NuvioBadge";
 import { NewTicketBadge } from "@/components/ui/NewTicketBadge";
+import { formatarDataBackend } from "@/lib/date-utils";
 
 export default function HistoricoChamadosPage() {
   const { usuario } = useAuth();
@@ -93,7 +94,7 @@ export default function HistoricoChamadosPage() {
         {filtrados.map((ticket) => <tr key={ticket.idTicket} className="border-b border-(--border) hover:bg-(--muted)">
           <td className="p-5"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="text-(--primary) hover:underline">#{ticket.idTicket}</Link></td><td className="p-5 font-medium"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="inline-flex max-w-full items-center gap-2 hover:text-(--primary)"><span className="truncate">{ticket.titulo}</span><NewTicketBadge dataAbertura={ticket.dataAbertura} /></Link></td><td className="p-5"><NuvioName name={ticket.nomeUsuario} tipo={ticket.tipoUsuario} /></td>
           <td className="p-5"><Badge>{ticket.prioridade}</Badge></td><td className="p-5"><Badge>{ticket.statusTicket}</Badge></td>
-          <td className="p-5 text-(--muted-foreground)"><div className="flex items-center justify-between gap-3"><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(ticket.dataAbertura))}</span>{podeExcluir && <button type="button" onClick={() => excluirTicket(ticket)} disabled={removendoId === ticket.idTicket} aria-label={`Excluir ticket #${ticket.idTicket}`} title="Excluir ticket" className="rounded-lg p-2 text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 size={17} /></button>}</div></td>
+          <td className="p-5 text-(--muted-foreground)"><div className="flex items-center justify-between gap-3"><span>{formatarDataBackend(ticket.dataAbertura)}</span>{podeExcluir && <button type="button" onClick={() => excluirTicket(ticket)} disabled={removendoId === ticket.idTicket} aria-label={`Excluir ticket #${ticket.idTicket}`} title="Excluir ticket" className="rounded-lg p-2 text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 size={17} /></button>}</div></td>
         </tr>)}
       </tbody></table></div>
     </div>

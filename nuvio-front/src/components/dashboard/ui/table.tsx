@@ -3,6 +3,7 @@ import Image from "next/image";
 import { API_URL } from "@/lib/api";
 import { NuvioName } from "@/components/ui/NuvioBadge";
 import { NewTicketBadge } from "@/components/ui/NewTicketBadge";
+import { formatarDataBackend } from "@/lib/date-utils";
 
 export type TicketResumo = {
   idTicket: number;
@@ -29,7 +30,7 @@ const statusClasses: Record<string, string> = {
 };
 
 function dataFormatada(data: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(data));
+  return formatarDataBackend(data);
 }
 
 function resolverFoto(foto?: string | null): string | null {

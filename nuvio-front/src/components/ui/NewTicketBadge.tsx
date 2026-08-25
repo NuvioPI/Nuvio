@@ -1,8 +1,10 @@
-export function isTicketNovo(dataAbertura: string) {
-  const data = new Date(dataAbertura.includes("T") ? dataAbertura : dataAbertura.replace(" ", "T"));
-  const idade = Date.now() - data.getTime();
+import { timestampDoBackend } from "@/lib/date-utils";
 
-  return Number.isFinite(data.getTime()) && idade >= 0 && idade <= 24 * 60 * 60 * 1000;
+export function isTicketNovo(dataAbertura: string) {
+  const timestamp = timestampDoBackend(dataAbertura);
+  const idade = Date.now() - timestamp;
+
+  return Number.isFinite(timestamp) && idade >= 0 && idade <= 24 * 60 * 60 * 1000;
 }
 
 export function NewTicketBadge({ dataAbertura }: { dataAbertura: string }) {
@@ -15,4 +17,3 @@ export function NewTicketBadge({ dataAbertura }: { dataAbertura: string }) {
     </span>
   );
 }
-

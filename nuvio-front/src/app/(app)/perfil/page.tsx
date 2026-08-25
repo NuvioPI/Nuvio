@@ -29,6 +29,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { apiFetch, API_URL } from "@/lib/api";
+import { dataDoBackend } from "@/lib/date-utils";
 import { useAuth } from "@/lib/auth-context";
 import { NuvioBadge } from "@/components/ui/NuvioBadge";
 
@@ -298,16 +299,14 @@ export default function PerfilPage() {
 
   const dataFormatada = useMemo(() => {
     if (!usuario?.dataCadastro) return "Membro recente";
-    try {
-      const data = new Date(usuario.dataCadastro);
-      return data.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
-    } catch {
-      return "Data indisponível";
-    }
+    const data = dataDoBackend(usuario.dataCadastro);
+    if (!data) return "Data indisponível";
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      timeZone: "America/Sao_Paulo",
+    }).format(data);
   }, [usuario?.dataCadastro]);
 
   if (carregando) {

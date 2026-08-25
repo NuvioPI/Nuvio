@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { formatarDataBackend } from "@/lib/date-utils";
 
 type ChatProps = { ticketId?: number; publicMode?: boolean };
 
@@ -70,7 +71,7 @@ export function Chat({ ticketId, publicMode = false }: ChatProps) {
             <div>
               <div className="text-sm font-semibold">{m.autor}</div>
               <div className="mt-1 p-2 bg-white rounded shadow-sm max-w-[36rem]">{m.texto || m.msgTicket}</div>
-              <div className="text-xs text-(--muted-foreground) mt-1">{new Date(m.data).toLocaleString()}</div>
+              <div className="text-xs text-(--muted-foreground) mt-1">{formatarDataBackend(m.data)}</div>
             </div>
           </div>
         ))}

@@ -18,6 +18,7 @@ import { motion } from "motion/react";
 import { apiFetch } from "@/lib/api";
 import type { TicketResumo } from "@/components/dashboard/ui/table";
 import { NuvioName } from "@/components/ui/NuvioBadge";
+import { formatarDataBackend, timestampDoBackend } from "@/lib/date-utils";
 
 const statusOrdem = ["Aberto", "Em atendimento", "Resolvido", "Fechado"] as const;
 const prioridadeOrdem = ["Alta", "Media", "Baixa"] as const;
@@ -58,7 +59,7 @@ export default function ReportsPage() {
     const limite = new Date();
     limite.setDate(limite.getDate() - dias);
 
-    return tickets.filter((ticket) => new Date(ticket.dataAbertura) >= limite);
+    return tickets.filter((ticket) => timestampDoBackend(ticket.dataAbertura) >= limite.getTime());
   }, [tickets, periodo]);
 
   const filtrados = useMemo(() => {
@@ -92,7 +93,7 @@ export default function ReportsPage() {
   const tendenciaDiaria = montarTendenciaDiaria(filtrados);
   const rankingSolicitantes = montarRanking(filtrados.map((ticket) => ticket.nomeUsuario)).slice(0, 5);
   const chamadosRecentes = [...filtrados]
-    .sort((a, b) => new Date(b.dataAbertura).getTime() - new Date(a.dataAbertura).getTime())
+    .sort((a, b) => timestampDoBackend(b.dataAbertura) - timestampDoBackend(a.dataAbertura))
     .slice(0, 6);
 
   function exportarCsv() {
@@ -512,7 +513,7 @@ function montarTendenciaDiaria(tickets: TicketResumo[]) {
     const inicio = data.getTime();
     const fim = inicio + 24 * 60 * 60 * 1000;
     const valor = tickets.filter((ticket) => {
-      const abertura = new Date(ticket.dataAbertura).getTime();
+      const abertura = timestampDoBackend(ticket.dataAbertura);
       return abertura >= inicio && abertura < fim;
     }).length;
 
@@ -541,5 +542,5 @@ function montarConicGradient(itens: { valor: number; cor: string }[], total: num
 }
 
 function dataFormatada(data: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(data));
+  return formatarDataBackend(data);
 }

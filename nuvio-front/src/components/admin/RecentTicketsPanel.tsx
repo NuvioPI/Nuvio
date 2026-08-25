@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { NuvioName } from "@/components/ui/NuvioBadge";
 import { NewTicketBadge } from "@/components/ui/NewTicketBadge";
+import { formatarDataBackend } from "@/lib/date-utils";
 
 type Ticket = {
   idTicket: number;
@@ -24,8 +25,7 @@ const statusStyles: Record<string, { dot: string; background: string; color: str
 };
 
 function dataFormatada(data: string) {
-  const valor = data.replace("T", " ");
-  return valor.length > 16 ? valor.slice(0, 16) : valor || "data desconhecida";
+  return formatarDataBackend(data);
 }
 
 export default function RecentTicketsPanel() {

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bell } from "@/components/animate-ui/icons/bell";
 import { AnimateIcon } from "@/components/animate-ui/icons/icon";
 import { apiFetch } from "@/lib/api";
+import { formatarDataBackend } from "@/lib/date-utils";
 
 type Notificacao = {
   idNotificacao: number;
@@ -106,7 +107,7 @@ export function Notifications() {
                           <strong className="block truncate text-sm text-(--foreground)">{notificacao.titulo}</strong>
                           <p className="mt-0.5 text-sm text-(--muted-foreground)">{notificacao.mensagem}</p>
                         </div>
-                        <span className="shrink-0 text-[10px] text-(--muted-foreground)">{new Date(notificacao.dataCriacao).toLocaleString("pt-BR")}</span>
+                        <span className="shrink-0 text-[10px] text-(--muted-foreground)">{formatarDataBackend(notificacao.dataCriacao)}</span>
                       </div>
                     </div>
                   );

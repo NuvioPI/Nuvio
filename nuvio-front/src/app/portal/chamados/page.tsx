@@ -5,11 +5,16 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Clock3, FileText, LogOut, MessageSquareText, Plus, Search, Send, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { dataDoBackend } from "@/lib/date-utils";
 
 type Ticket = { idTicket: number; titulo: string; descricao: string; statusTicket: string; prioridade: string; dataAbertura: string; nomeCategoria?: string };
 type Message = { idRespostaTicket: number; msgTicket: string; dataResposta: string; nomeUsuario?: string; autor?: string };
 
 const statusStyles: Record<string, string> = { Aberto: "bg-sky-50 text-sky-700", "Em atendimento": "bg-amber-50 text-amber-700", Resolvido: "bg-emerald-50 text-emerald-700", Fechado: "bg-slate-100 text-slate-600" };
+
+function isoDoBackend(valor: string) {
+  return dataDoBackend(valor)?.toISOString() ?? valor;
+}
 
 export default function PortalChamadosPage() {
   const { usuario, logout } = useAuth();
@@ -29,7 +34,7 @@ export default function PortalChamadosPage() {
   async function loadTickets(selectFirst = false) {
     try {
       const data = await apiFetch<{ tickets: Ticket[] }>("/portal/tickets");
-      setTickets(data.tickets);
+      setTickets(data.tickets.map((ticket) => ({ ...ticket, dataAbertura: isoDoBackend(ticket.dataAbertura) })));
       if (selectFirst && data.tickets[0]) setSelectedId(data.tickets[0].idTicket);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível carregar seus chamados.");
@@ -49,7 +54,7 @@ export default function PortalChamadosPage() {
       return () => window.clearTimeout(clear);
     }
     let cancelled = false;
-    apiFetch<{ mensagens: Message[] }>(`/portal/tickets/${selectedId}/mensagens`).then((data) => { if (!cancelled) setMessages(data.mensagens); }).catch(() => { if (!cancelled) setMessages([]); });
+    apiFetch<{ mensagens: Message[] }>(`/portal/tickets/${selectedId}/mensagens`).then((data) => { if (!cancelled) setMessages(data.mensagens.map((message) => ({ ...message, dataResposta: isoDoBackend(message.dataResposta) }))); }).catch(() => { if (!cancelled) setMessages([]); });
     return () => { cancelled = true; };
   }, [selectedId]);
 
@@ -71,7 +76,7 @@ export default function PortalChamadosPage() {
   async function sendReply(event: FormEvent) {
     event.preventDefault(); if (!selectedId || !reply.trim()) return;
     setSending(true);
-    try { await apiFetch(`/portal/tickets/${selectedId}/mensagens`, { method: "POST", body: JSON.stringify({ mensagem: reply }) }); setReply(""); const data = await apiFetch<{ mensagens: Message[] }>(`/portal/tickets/${selectedId}/mensagens`); setMessages(data.mensagens); }
+    try { await apiFetch(`/portal/tickets/${selectedId}/mensagens`, { method: "POST", body: JSON.stringify({ mensagem: reply }) }); setReply(""); const data = await apiFetch<{ mensagens: Message[] }>(`/portal/tickets/${selectedId}/mensagens`); setMessages(data.mensagens.map((message) => ({ ...message, dataResposta: isoDoBackend(message.dataResposta) }))); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Não foi possível enviar a mensagem."); }
     finally { setSending(false); }
   }
