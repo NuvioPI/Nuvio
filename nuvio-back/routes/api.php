@@ -204,6 +204,8 @@ if ($recurso === 'tickets') {
             $controller->update($id);
         }
     } elseif ($method === 'DELETE' && !$subrecurso) {
+        autenticarEAutorizar(['Técnico', 'Administrador']);
+
         if (!$id) {
             http_response_code(400);
             echo json_encode(['erro' => 'ID do ticket é obrigatório para deletar.']);

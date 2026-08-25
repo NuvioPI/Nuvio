@@ -685,7 +685,23 @@ class TicketController extends BaseController
 
             $this->ticket->idTicket = (int) $id;
 
+            $this->db->beginTransaction();
+
+            // Remove primeiro os registros que possuem FK para Ticket.
+            foreach ([
+                'respostaTicket',
+                'anexo',
+                'avaliacaoTicket',
+            ] as $tabelaDependente) {
+                $stmt = $this->db->prepare(
+                    "DELETE FROM {$tabelaDependente} WHERE idTicket = ?"
+                );
+                $stmt->execute([(int) $id]);
+            }
+
             if (!$this->ticket->delete()) {
+                $this->desfazerTransacao();
+
                 $this->respond([
                     'erro' => 'Não foi possível remover o ticket.'
                 ], 500);
@@ -693,13 +709,22 @@ class TicketController extends BaseController
                 return;
             }
 
+            $this->db->commit();
+
             $this->respond([
                 'mensagem' => 'Ticket removido com sucesso.'
             ]);
         } catch (PDOException $erro) {
+            $this->desfazerTransacao();
             $this->respond([
                 'erro' => 'O ticket possui registros vinculados e não pode ser removido.'
             ], 409);
+        } catch (Throwable $erro) {
+            $this->desfazerTransacao();
+
+            $this->respond([
+                'erro' => 'NÃ£o foi possÃ­vel remover o ticket.'
+            ], 500);
         }
     }
 

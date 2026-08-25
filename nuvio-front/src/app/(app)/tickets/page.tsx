@@ -2,16 +2,25 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, Clock3, FileText, Search } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock3, FileText, Search, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import type { TicketResumo } from "@/components/dashboard/ui/table";
 
 export default function HistoricoChamadosPage() {
+  const { usuario } = useAuth();
   const [tickets, setTickets] = useState<TicketResumo[]>([]);
   const [busca, setBusca] = useState("");
   const [status, setStatus] = useState("Todos");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+  const [mensagem, setMensagem] = useState("");
+  const [removendoId, setRemovendoId] = useState<number | null>(null);
+
+  const tipoUsuario = typeof usuario?.tipo === "object" && usuario.tipo !== null
+    ? usuario.tipo.nome
+    : usuario?.tipo;
+  const podeExcluir = tipoUsuario === "Administrador" || tipoUsuario === "Técnico";
 
   useEffect(() => {
     apiFetch<{ tickets: TicketResumo[] }>("/tickets")
@@ -26,6 +35,28 @@ export default function HistoricoChamadosPage() {
   }), [tickets, busca, status]);
 
   const total = (valor: string) => tickets.filter((ticket) => ticket.statusTicket === valor).length;
+
+  async function excluirTicket(ticket: TicketResumo) {
+    const confirmado = window.confirm(
+      `Excluir o ticket #${ticket.idTicket} - ${ticket.titulo}? Esta ação também removerá respostas, anexos e avaliações.`
+    );
+
+    if (!confirmado) return;
+
+    setErro("");
+    setMensagem("");
+    setRemovendoId(ticket.idTicket);
+
+    try {
+      await apiFetch(`/tickets/${ticket.idTicket}`, { method: "DELETE" });
+      setTickets((atuais) => atuais.filter((item) => item.idTicket !== ticket.idTicket));
+      setMensagem(`Ticket #${ticket.idTicket} removido com sucesso.`);
+    } catch (causa) {
+      setErro(causa instanceof Error ? causa.message : "Não foi possível remover o ticket.");
+    } finally {
+      setRemovendoId(null);
+    }
+  }
 
   return <main className="flex-1 p-8">
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -42,17 +73,18 @@ export default function HistoricoChamadosPage() {
         <option value="Todos">Todos os status</option><option>Aberto</option><option>Em atendimento</option><option>Resolvido</option><option>Fechado</option>
       </select>
     </div></div>
+    {mensagem && <div role="status" className="mb-5 rounded-xl border border-green-500/25 bg-green-500/10 p-4 text-sm text-green-600">{mensagem}</div>}
+    {erro && !carregando && <div role="alert" className="mb-5 rounded-xl border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-600">{erro}</div>}
     <div className="bg-(--card) border border-(--border) rounded-[28px] overflow-hidden shadow-(--shadow)"><div className="p-6 border-b border-(--border)"><h2 className="text-xl font-semibold">Chamados</h2></div>
       <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-(--border)">
         <th className="p-5 text-left">ID</th><th className="p-5 text-left">Título</th><th className="p-5 text-left">Solicitante</th><th className="p-5 text-left">Prioridade</th><th className="p-5 text-left">Status</th><th className="p-5 text-left">Aberto em</th>
       </tr></thead><tbody>
         {carregando && <tr><td colSpan={6} className="p-8 text-center text-(--muted-foreground)">Carregando chamados...</td></tr>}
-        {erro && <tr><td colSpan={6} className="p-8 text-center text-red-500">{erro}</td></tr>}
         {!carregando && !erro && filtrados.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-(--muted-foreground)">Nenhum chamado encontrado.</td></tr>}
         {filtrados.map((ticket) => <tr key={ticket.idTicket} className="border-b border-(--border) hover:bg-(--muted)">
           <td className="p-5"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="text-(--primary) hover:underline">#{ticket.idTicket}</Link></td><td className="p-5 font-medium"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="hover:text-(--primary)">{ticket.titulo}</Link></td><td className="p-5">{ticket.nomeUsuario}</td>
           <td className="p-5"><Badge>{ticket.prioridade}</Badge></td><td className="p-5"><Badge>{ticket.statusTicket}</Badge></td>
-          <td className="p-5 text-(--muted-foreground)">{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(ticket.dataAbertura))}</td>
+          <td className="p-5 text-(--muted-foreground)"><div className="flex items-center justify-between gap-3"><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(ticket.dataAbertura))}</span>{podeExcluir && <button type="button" onClick={() => excluirTicket(ticket)} disabled={removendoId === ticket.idTicket} aria-label={`Excluir ticket #${ticket.idTicket}`} title="Excluir ticket" className="rounded-lg p-2 text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 size={17} /></button>}</div></td>
         </tr>)}
       </tbody></table></div>
     </div>
