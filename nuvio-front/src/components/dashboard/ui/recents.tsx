@@ -1,4 +1,5 @@
 import { TicketResumo } from "./table";
+import { VerifiedName } from "@/components/ui/VerifiedBadge";
 
 export default function Recents({ tickets }: { tickets: TicketResumo[] }) {
   return (
@@ -8,7 +9,7 @@ export default function Recents({ tickets }: { tickets: TicketResumo[] }) {
         {tickets.slice(0, 4).map((ticket) => (
           <li key={ticket.idTicket} className="flex items-center gap-4">
             <div className="w-1 h-8 bg-(--primary) rounded-full" />
-            <div><p className="text-(--foreground) font-medium"><strong>{ticket.nomeUsuario}</strong> abriu o chamado #{ticket.idTicket}</p>
+            <div><p className="text-(--foreground) font-medium"><strong><VerifiedName name={ticket.nomeUsuario} verified={ticket.verificado} /></strong> abriu o chamado #{ticket.idTicket}</p>
               <p className="text-sm text-zinc-500">{ticket.titulo}</p></div>
           </li>
         ))}

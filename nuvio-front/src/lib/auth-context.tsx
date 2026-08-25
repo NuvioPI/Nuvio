@@ -12,6 +12,7 @@ export interface Usuario {
   setor?: string | null;
   telefone?: string | null;
   fotoPerfil?: string | null;
+  verificado?: boolean | number | string | null;
   dataCadastro?: string | null;
   tipo?: {
     id: number;

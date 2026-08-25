@@ -103,6 +103,7 @@ class AuthController
                 'email' => $usuario['email'],
                 'cargo' => $usuario['cargo'] ?? null,
                 'setor' => $usuario['setor'] ?? null,
+                'verificado' => $this->usuarioVerificado($idUsuario),
                 'tipo' => [
                     'id' => $idTipoUsuario,
                     'nome' => $tipo,
@@ -180,6 +181,7 @@ class AuthController
                         'telefone' => $usuario['telefone'] ?? null,
                         'fotoPerfil' => $usuario['fotoPerfil'] ?? $usuario['fotoperfil'] ?? null,
                         'dataCadastro' => $usuario['dataCadastro'] ?? $usuario['datacadastro'] ?? null,
+                        'verificado' => $this->usuarioVerificado($idUsuario),
                         'tipo' => $usuario['tipo'] ?? $auth['tipo'] ?? 'Cliente',
                     ],
                 ]);
@@ -198,6 +200,7 @@ class AuthController
                     'telefone' => null,
                     'fotoPerfil' => null,
                     'dataCadastro' => null,
+                    'verificado' => false,
                     'tipo' => $auth['tipo'] ?? 'Cliente',
                 ],
             ]);
@@ -256,6 +259,7 @@ class AuthController
                     'telefone' => $usuarioAtualizado['telefone'] ?? null,
                     'fotoPerfil' => $usuarioAtualizado['fotoPerfil'] ?? $usuarioAtualizado['fotoperfil'] ?? null,
                     'dataCadastro' => $usuarioAtualizado['dataCadastro'] ?? $usuarioAtualizado['datacadastro'] ?? null,
+                    'verificado' => $this->usuarioVerificado((int) $idUsuario),
                     'tipo' => $usuarioAtualizado['tipo'] ?? null,
                 ]
             ]);
@@ -264,6 +268,27 @@ class AuthController
 
         http_response_code(500);
         echo json_encode(['erro' => 'Não foi possível atualizar o perfil.']);
+    }
+
+    private function usuarioVerificado(int $idUsuario): bool
+    {
+        if ($idUsuario <= 0) {
+            return false;
+        }
+
+        try {
+            $stmt = $this->db->prepare(
+                'SELECT COALESCE(cp.verificado, 0)
+                 FROM Usuario u
+                 LEFT JOIN ClientePerfil cp ON cp.idUsuario = u.idUsuario
+                 WHERE u.idUsuario = ?
+                 LIMIT 1'
+            );
+            $stmt->execute([$idUsuario]);
+            return (bool) $stmt->fetchColumn();
+        } catch (Throwable $e) {
+            return false;
+        }
     }
 
     private function buscarPorEmailComTipo(string $email)

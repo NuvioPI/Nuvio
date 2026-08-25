@@ -7,6 +7,7 @@ import Recents from "@/components/dashboard/ui/recents";
 import Actions from "@/components/dashboard/ui/actions";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
 
 export default function Dashboard() {
   const { usuario } = useAuth();
@@ -25,7 +26,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen p-4 md:p-10 bg-(--background)">
       <section className="mb-2"><h1 className="text-3xl md:text-5xl text-(--foreground)">Dashboard</h1>
-        <p className="text-xl md:text-3xl text-zinc-500 italic">Bem-vindo de volta, {usuario?.nome ?? ""}!</p></section>
+        <p className="flex items-center gap-2 text-xl italic text-zinc-500 md:text-3xl">Bem-vindo de volta, <span className="inline-flex items-center gap-1.5"><span>{usuario?.nome ?? ""}</span><VerifiedBadge verified={usuario?.verificado} /></span>!</p></section>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
         <div className="lg:col-span-2"><section className="mt-6 md:mt-10 grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
           <Card value={quantidade("Aberto")} title="Abertos" percent="" />

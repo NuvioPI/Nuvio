@@ -125,8 +125,10 @@ class PortalController extends BaseController
         }
 
         $stmt = $this->db->prepare(
-            'SELECT r.idRespostaTicket, r.idTicket, r.msgTicket, r.dataResposta, u.nome AS nomeUsuario
+            'SELECT r.idRespostaTicket, r.idTicket, r.msgTicket, r.dataResposta, u.nome AS nomeUsuario,
+                    COALESCE(cp.verificado, 0) AS verificado
              FROM respostaTicket r INNER JOIN Usuario u ON u.idUsuario = r.idUsuario
+             LEFT JOIN ClientePerfil cp ON cp.idUsuario = u.idUsuario
              WHERE r.idTicket = ? ORDER BY r.dataResposta ASC, r.idRespostaTicket ASC'
         );
         $stmt->execute([(int) $id]);

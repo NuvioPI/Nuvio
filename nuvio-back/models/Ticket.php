@@ -5,6 +5,7 @@ class Ticket
     private $conn;
     private $tabela = 'Ticket';
     private static ?bool $usuarioTemFotoPerfil = null;
+    private static ?bool $clientePerfilExiste = null;
 
     private function temColunaUsuario(string $coluna): bool
     {
@@ -24,6 +25,26 @@ class Ticket
         return self::$usuarioTemFotoPerfil;
     }
 
+    private function temTabelaClientePerfil(): bool
+    {
+        if (self::$clientePerfilExiste !== null) {
+            return self::$clientePerfilExiste;
+        }
+
+        try {
+            $stmt = $this->conn->prepare(
+                'SELECT COUNT(*) FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+            );
+            $stmt->execute(['ClientePerfil']);
+            self::$clientePerfilExiste = (int) $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            self::$clientePerfilExiste = false;
+        }
+
+        return self::$clientePerfilExiste;
+    }
+
     public $idTicket;
     public $idTecnico;
     public $idUsuario;
@@ -41,6 +62,7 @@ class Ticket
     public $nomeTecnico;
     public $nomeCategoria;
     public $nomeSLA;
+    public $verificado;
 
     public function __construct($conexao)
     {
@@ -50,50 +72,15 @@ class Ticket
     public function getAll()
     {
         $fotoSelect = $this->temColunaUsuario('fotoPerfil')
-            ? ', u.fotoPerfil AS fotoPerfil'
-            : ', NULL AS fotoPerfil';
+            ? 'u.fotoPerfil AS fotoPerfil'
+            : 'NULL AS fotoPerfil';
+        $clientePerfilJoin = $this->temTabelaClientePerfil()
+            ? 'LEFT JOIN ClientePerfil cp ON cp.idUsuario = u.idUsuario'
+            : '';
+        $verificadoSelect = $this->temTabelaClientePerfil()
+            ? 'COALESCE(cp.verificado, 0) AS verificado'
+            : '0 AS verificado';
 
-        $query = "
-            SELECT
-                t.idTicket,
-                t.idTecnico,
-                t.idUsuario,
-                t.idCategoria,
-                t.idSLA,
-                t.titulo,
-                t.descricao,
-                t.statusTicket,
-                t.prioridade,
-                t.dataAbertura,
-                t.dataFechamento,
-                u.nome AS nomeUsuario,
-                u.email AS emailUsuario
-                {$fotoSelect},
-                us.nome AS nomeTecnico,
-                c.nomeCategoria,
-                s.nomeSLA
-            FROM {$this->tabela} t
-            INNER JOIN Usuario u
-                ON t.idUsuario = u.idUsuario
-            INNER JOIN Tecnico tc
-                ON t.idTecnico = tc.idTecnico
-            INNER JOIN Usuario us
-                ON tc.idUsuario = us.idUsuario
-            INNER JOIN Categoria c
-                ON t.idCategoria = c.idCategoria
-            INNER JOIN SLA s
-                ON t.idSLA = s.idSLA
-            ORDER BY t.dataAbertura DESC
-        ";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-
-        return $stmt;
-    }
-
-    public function getById()
-    {
         $query = "
             SELECT
                 t.idTicket,
@@ -109,6 +96,61 @@ class Ticket
                 t.dataFechamento,
                 u.nome AS nomeUsuario,
                 u.email AS emailUsuario,
+                {$fotoSelect},
+                {$verificadoSelect},
+                us.nome AS nomeTecnico,
+                c.nomeCategoria,
+                s.nomeSLA
+            FROM {$this->tabela} t
+            INNER JOIN Usuario u
+                ON t.idUsuario = u.idUsuario
+            INNER JOIN Tecnico tc
+                ON t.idTecnico = tc.idTecnico
+            INNER JOIN Usuario us
+                ON tc.idUsuario = us.idUsuario
+            {$clientePerfilJoin}
+            INNER JOIN Categoria c
+                ON t.idCategoria = c.idCategoria
+            INNER JOIN SLA s
+                ON t.idSLA = s.idSLA
+            ORDER BY t.dataAbertura DESC
+        ";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        return $stmt;
+    }
+
+    public function getById()
+    {
+        $fotoSelect = $this->temColunaUsuario('fotoPerfil')
+            ? 'u.fotoPerfil AS fotoPerfil'
+            : 'NULL AS fotoPerfil';
+        $clientePerfilJoin = $this->temTabelaClientePerfil()
+            ? 'LEFT JOIN ClientePerfil cp ON cp.idUsuario = u.idUsuario'
+            : '';
+        $verificadoSelect = $this->temTabelaClientePerfil()
+            ? 'COALESCE(cp.verificado, 0) AS verificado'
+            : '0 AS verificado';
+
+        $query = "
+            SELECT
+                t.idTicket,
+                t.idTecnico,
+                t.idUsuario,
+                t.idCategoria,
+                t.idSLA,
+                t.titulo,
+                t.descricao,
+                t.statusTicket,
+                t.prioridade,
+                t.dataAbertura,
+                t.dataFechamento,
+                u.nome AS nomeUsuario,
+                u.email AS emailUsuario,
+                {$fotoSelect},
+                {$verificadoSelect},
                 us.nome AS nomeTecnico,
                 c.nomeCategoria,
                 s.nomeSLA,
@@ -121,6 +163,7 @@ class Ticket
                 ON t.idTecnico = tc.idTecnico
             INNER JOIN Usuario us
                 ON tc.idUsuario = us.idUsuario
+            {$clientePerfilJoin}
             INNER JOIN Categoria c
                 ON t.idCategoria = c.idCategoria
             INNER JOIN SLA s
@@ -191,6 +234,13 @@ class Ticket
 
     public function getByTecnico()
     {
+        $clientePerfilJoin = $this->temTabelaClientePerfil()
+            ? 'LEFT JOIN ClientePerfil cp ON cp.idUsuario = u.idUsuario'
+            : '';
+        $verificadoSelect = $this->temTabelaClientePerfil()
+            ? 'COALESCE(cp.verificado, 0) AS verificado'
+            : '0 AS verificado';
+
         $query = "
             SELECT
                 t.idTicket,
@@ -205,10 +255,12 @@ class Ticket
                 t.dataAbertura,
                 t.dataFechamento,
                 u.nome AS nomeUsuario,
+                {$verificadoSelect},
                 c.nomeCategoria
             FROM {$this->tabela} t
             INNER JOIN Usuario u
                 ON t.idUsuario = u.idUsuario
+            {$clientePerfilJoin}
             INNER JOIN Categoria c
                 ON t.idCategoria = c.idCategoria
             WHERE t.idTecnico = :idTecnico

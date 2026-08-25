@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type { TicketResumo } from "@/components/dashboard/ui/table";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import { VerifiedName } from "@/components/ui/VerifiedBadge";
 
 export default function HistoricoChamadosPage() {
   const { usuario } = useAuth();
@@ -89,7 +90,7 @@ export default function HistoricoChamadosPage() {
         {carregando && <tr><td colSpan={6} className="p-8 text-center text-(--muted-foreground)">Carregando chamados...</td></tr>}
         {!carregando && !erro && filtrados.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-(--muted-foreground)">Nenhum chamado encontrado.</td></tr>}
         {filtrados.map((ticket) => <tr key={ticket.idTicket} className="border-b border-(--border) hover:bg-(--muted)">
-          <td className="p-5"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="text-(--primary) hover:underline">#{ticket.idTicket}</Link></td><td className="p-5 font-medium"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="hover:text-(--primary)">{ticket.titulo}</Link></td><td className="p-5">{ticket.nomeUsuario}</td>
+          <td className="p-5"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="text-(--primary) hover:underline">#{ticket.idTicket}</Link></td><td className="p-5 font-medium"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="hover:text-(--primary)">{ticket.titulo}</Link></td><td className="p-5"><VerifiedName name={ticket.nomeUsuario} verified={ticket.verificado} /></td>
           <td className="p-5"><Badge>{ticket.prioridade}</Badge></td><td className="p-5"><Badge>{ticket.statusTicket}</Badge></td>
           <td className="p-5 text-(--muted-foreground)"><div className="flex items-center justify-between gap-3"><span>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(ticket.dataAbertura))}</span>{podeExcluir && <button type="button" onClick={() => excluirTicket(ticket)} disabled={removendoId === ticket.idTicket} aria-label={`Excluir ticket #${ticket.idTicket}`} title="Excluir ticket" className="rounded-lg p-2 text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 size={17} /></button>}</div></td>
         </tr>)}

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { TicketReplyComposer } from "@/components/ticket/TicketReplyComposer";
+import { VerifiedName } from "@/components/ui/VerifiedBadge";
 
 type TicketResumoAtendimento = {
   idTicket: number;
@@ -20,6 +21,7 @@ type TicketResumoAtendimento = {
   descricao?: string;
   nomeUsuario: string;
   emailUsuario?: string | null;
+  verificado?: boolean | number | string | null;
   prioridade: "Alta" | "Media" | "Baixa";
   statusTicket: string;
   dataAbertura: string;
@@ -42,6 +44,7 @@ type Resposta = {
   dataResposta: string;
   nomeUsuario?: string;
   tipoUsuario?: string;
+  verificado?: boolean | number | string | null;
 };
 
 const statusClasses: Record<string, string> = {
@@ -178,7 +181,7 @@ export default function AtendimentoPage() {
                   </span>
                   <span className="shrink-0 text-[10px] text-(--muted-foreground)">{dataCurta(item.dataAbertura)}</span>
                 </div>
-                <p className="mt-1 truncate text-xs text-(--muted-foreground)">{item.nomeUsuario}</p>
+                <p className="mt-1 truncate text-xs text-(--muted-foreground)"><VerifiedName name={item.nomeUsuario} verified={item.verificado} /></p>
                 <span className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${statusClasses[item.statusTicket] ?? "bg-zinc-500/10 text-zinc-400"}`}>
                   {item.statusTicket}
                 </span>
@@ -204,7 +207,7 @@ export default function AtendimentoPage() {
                   </div>
                   <div className="mt-1 flex items-center gap-2 text-xs text-(--muted-foreground)">
                     <UserRound size={13} />
-                    <span>{atendimento.nomeUsuario}</span>
+                    <VerifiedName name={atendimento.nomeUsuario} verified={atendimento.verificado} />
                     <span>·</span>
                     <Mail size={13} />
                     <span className="truncate">{atendimento.emailUsuario || "sem e-mail"}</span>
@@ -224,7 +227,7 @@ export default function AtendimentoPage() {
                           {atendimento.nomeUsuario.slice(0, 1).toUpperCase()}
                         </span>
                         <div>
-                          <p className="text-sm font-semibold text-(--foreground)">{atendimento.nomeUsuario}</p>
+                          <p className="text-sm font-semibold text-(--foreground)"><VerifiedName name={atendimento.nomeUsuario} verified={atendimento.verificado} /></p>
                           <p className="text-[11px] text-(--muted-foreground)">Descrição inicial · {dataFormatada(atendimento.dataAbertura)}</p>
                         </div>
                       </div>
@@ -240,7 +243,7 @@ export default function AtendimentoPage() {
                         <div className={`max-w-[min(88%,620px)] rounded-2xl border px-4 py-3 ${cliente ? "border-(--border) bg-(--card)" : "border-(--primary)/20 bg-(--primary)/10"}`}>
                           <div className="mb-1 flex items-center justify-between gap-5">
                             <p className={`text-xs font-semibold ${cliente ? "text-(--foreground)" : "text-(--primary)"}`}>
-                              {resposta.nomeUsuario || (cliente ? atendimento.nomeUsuario : "Atendente")}
+                              <VerifiedName name={resposta.nomeUsuario || (cliente ? atendimento.nomeUsuario : "Atendente")} verified={resposta.verificado} />
                             </p>
                             <span className="text-[10px] text-(--muted-foreground)">{dataFormatada(resposta.dataResposta)}</span>
                           </div>
@@ -295,7 +298,7 @@ function TicketDetails({ ticket }: { ticket: TicketDetalhe }) {
             {ticket.nomeUsuario.slice(0, 1).toUpperCase()}
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-(--foreground)">{ticket.nomeUsuario}</p>
+            <p className="truncate text-sm font-semibold text-(--foreground)"><VerifiedName name={ticket.nomeUsuario} verified={ticket.verificado} /></p>
             <p className="break-all text-xs text-(--muted-foreground)">{ticket.emailUsuario || "Sem e-mail"}</p>
           </div>
         </div>

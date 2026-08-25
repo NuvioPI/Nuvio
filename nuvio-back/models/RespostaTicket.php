@@ -4,12 +4,14 @@ class RespostaTicket
 {
     private $conn;
     private $tabela = "respostaTicket";
+    private ?bool $clientePerfilExiste = null;
 
     public $idRespostaTicket;
     public $idUsuario;
     public $idTicket;
     public $msgTicket;
     public $dataResposta;
+    public $verificado;
 
     public function __construct($conexao)
     {
@@ -18,6 +20,13 @@ class RespostaTicket
 
     public function getByTicket()
     {
+        $clientePerfilJoin = $this->temTabelaClientePerfil()
+            ? 'LEFT JOIN ClientePerfil cp ON cp.idUsuario = u.idUsuario'
+            : '';
+        $verificadoSelect = $this->temTabelaClientePerfil()
+            ? 'COALESCE(cp.verificado, 0) AS verificado'
+            : '0 AS verificado';
+
         $query = "
             SELECT
                 r.idRespostaTicket,
@@ -26,10 +35,12 @@ class RespostaTicket
                 r.msgTicket,
                 r.dataResposta,
                 u.nome AS nomeUsuario,
+                {$verificadoSelect},
                 tp.descricao AS tipoUsuario
             FROM " . $this->tabela . " r
             INNER JOIN Usuario u  ON r.idUsuario = u.idUsuario
             INNER JOIN tipoUsuario tp ON u.idtipoUsuario = tp.idtipoUsuario
+            {$clientePerfilJoin}
             WHERE r.idTicket = :idTicket
             ORDER BY r.dataResposta ASC
         ";
@@ -43,6 +54,13 @@ class RespostaTicket
     // Buscar resposta por ID
     public function getById()
     {
+        $clientePerfilJoin = $this->temTabelaClientePerfil()
+            ? 'LEFT JOIN ClientePerfil cp ON cp.idUsuario = u.idUsuario'
+            : '';
+        $verificadoSelect = $this->temTabelaClientePerfil()
+            ? 'COALESCE(cp.verificado, 0) AS verificado'
+            : '0 AS verificado';
+
         $query = "
             SELECT
                 r.idRespostaTicket,
@@ -50,9 +68,11 @@ class RespostaTicket
                 r.idTicket,
                 r.msgTicket,
                 r.dataResposta,
-                u.nome AS nomeUsuario
+                u.nome AS nomeUsuario,
+                {$verificadoSelect}
             FROM " . $this->tabela . " r
             INNER JOIN Usuario u ON r.idUsuario = u.idUsuario
+            {$clientePerfilJoin}
             WHERE r.idRespostaTicket = :idRespostaTicket
             LIMIT 1
         ";
@@ -74,6 +94,26 @@ class RespostaTicket
         }
 
         return true;
+    }
+
+    private function temTabelaClientePerfil(): bool
+    {
+        if ($this->clientePerfilExiste !== null) {
+            return $this->clientePerfilExiste;
+        }
+
+        try {
+            $stmt = $this->conn->prepare(
+                'SELECT COUNT(*) FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+            );
+            $stmt->execute(['ClientePerfil']);
+            $this->clientePerfilExiste = (int) $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            $this->clientePerfilExiste = false;
+        }
+
+        return $this->clientePerfilExiste;
     }
 
     // Criar resposta — dataResposta preenchida pelo banco (DEFAULT CURRENT_TIMESTAMP)

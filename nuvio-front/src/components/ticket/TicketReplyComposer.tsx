@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { Bold, Image as ImageIcon, Link2, Paperclip, Send } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { VerifiedName } from "@/components/ui/VerifiedBadge";
 
 type TicketReply = {
   idTicket: number;
   titulo: string;
   nomeUsuario?: string | null;
+  verificado?: boolean | number | string | null;
   emailUsuario?: string | null;
   statusTicket: string;
 };
@@ -71,7 +73,7 @@ export function TicketReplyComposer({
         <div className="flex items-center gap-3 rounded-xl border border-(--border) bg-(--background) px-3 py-2 text-sm">
           <span className="w-14 shrink-0 text-xs font-medium text-(--muted-foreground)">Para</span>
           <span className="truncate text-(--foreground)">
-            {ticket.nomeUsuario || "Solicitante"} &lt;{ticket.emailUsuario || "sem e-mail"}&gt;
+            {ticket.nomeUsuario ? <VerifiedName name={ticket.nomeUsuario} verified={ticket.verificado} /> : "Solicitante"} &lt;{ticket.emailUsuario || "sem e-mail"}&gt;
           </span>
         </div>
 

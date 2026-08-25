@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { VerifiedName } from "@/components/ui/VerifiedBadge";
 
 type Ticket = {
   idTicket: number;
   titulo: string;
   nomeUsuario?: string | null;
+  verificado?: boolean | number | string | null;
   statusTicket: string;
   prioridade: string;
   dataAbertura: string;
@@ -87,7 +89,7 @@ export default function RecentTicketsPanel() {
                     #{ticket.idTicket} · {ticket.titulo}
                   </p>
                   <p className="text-[11px] text-(--muted-foreground)">
-                    {ticket.nomeUsuario || "Usuário não informado"} · {dataFormatada(ticket.dataAbertura)}
+                    {ticket.nomeUsuario ? <VerifiedName name={ticket.nomeUsuario} verified={ticket.verificado} /> : "Usuário não informado"} · {dataFormatada(ticket.dataAbertura)}
                   </p>
                 </div>
                 <span
