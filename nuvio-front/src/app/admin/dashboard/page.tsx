@@ -2,7 +2,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import RecentTicketsPanel from "@/components/admin/RecentTicketsPanel";
-import UserManagementPanel from "@/components/admin/UserManagementPanel";
 
 export const metadata: Metadata = {
   title: "Nuvio | Dashboard Admin",
@@ -61,7 +60,7 @@ const actions = [
   {
     label: "Usuários e permissões",
     desc: "Gerencia agentes, funções e níveis de acesso ao sistema.",
-    href: "/users#gerenciamento",
+    href: "/admin/dashboard/users",
     icon: "users",
     bg: "#eeedfe",
     ic: "#534ab7",
@@ -321,7 +320,6 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      <UserManagementPanel />
     </div>
   );
 }

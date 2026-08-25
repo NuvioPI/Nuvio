@@ -3,7 +3,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Plus, Search, Shield, Users, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import UserManagementPanel from "@/components/admin/UserManagementPanel";
 
 type Usuario = {
   idUsuario: number;
@@ -101,7 +100,6 @@ export default function UsuariosPage() {
   }
 
   return <div className="flex min-h-screen bg-(--background) text-(--foreground)"><main className="flex-1 p-8">
-    <div id="gerenciamento" className="mb-8"><UserManagementPanel /></div>
     <div className="mb-10 flex items-center justify-between gap-4"><div><h1 className="page-title">Usuários</h1><p className="page-subtitle mt-2">Gerencie os usuários cadastrados no sistema.</p></div><button type="button" onClick={abrirCadastro} className="btn-primary flex items-center gap-2 px-6 py-3"><Plus size={18} />Novo usuário</button></div>
     {mensagem && <div role="status" className="mb-5 rounded-xl border border-green-500/25 bg-green-500/10 p-4 text-sm text-green-700">{mensagem}</div>}
     {erro && !aberto && <div role="alert" className="mb-5 rounded-xl border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-600">{erro}</div>}

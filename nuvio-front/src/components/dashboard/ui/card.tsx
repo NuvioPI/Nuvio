@@ -1,10 +1,21 @@
+import { AlertCircle, CheckCircle2, Clock3, LockKeyhole, type LucideIcon } from "lucide-react";
+
 type CardProps = {
   value: number;
   title: string;
   percent: string;
 };
 
+const icons: Record<string, LucideIcon> = {
+  Abertos: AlertCircle,
+  "Em atendimento": Clock3,
+  Resolvidos: CheckCircle2,
+  Fechados: LockKeyhole,
+};
+
 export function Card({ value, title, percent }: CardProps) {
+  const Icon = icons[title] ?? AlertCircle;
+
   return (
     <div className="
       bg-(--card)
@@ -17,7 +28,9 @@ export function Card({ value, title, percent }: CardProps) {
       hover:border-(--primary)
       transition-all duration-200
     ">
-      <div className="w-8 h-8 md:w-12 md:h-12 bg-(--primary) relative rounded-full shrink-0" />
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--primary) md:h-12 md:w-12">
+        <Icon className="h-4 w-4 text-white md:h-6 md:w-6" strokeWidth={2} aria-hidden="true" />
+      </div>
 
       <div className="flex flex-col min-w-0">
         <h1 className="text-2xl md:text-4xl font-bold text-(--card-foreground) leading-tight">

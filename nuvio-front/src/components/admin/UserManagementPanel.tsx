@@ -67,7 +67,7 @@ function estaVerificado(usuario: Usuario) {
   return usuario.verificado === true || usuario.verificado === 1 || usuario.verificado === "1";
 }
 
-export default function UserManagementPanel() {
+export default function UserManagementPanel({ showFullRegistrationLink = true }: { showFullRegistrationLink?: boolean }) {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
@@ -235,9 +235,9 @@ export default function UserManagementPanel() {
           <h2 className="mt-1 text-lg font-medium text-(--foreground)">Gerenciar usuários</h2>
           <p className="mt-1 text-xs text-(--muted-foreground)">Edite dados, verifique contas, altere perfis ou remova acessos.</p>
         </div>
-        <Link href="/users" className="inline-flex items-center justify-center rounded-lg border border-(--border) px-3 py-2 text-xs font-medium text-(--foreground) transition hover:bg-(--muted)">
+        {showFullRegistrationLink && <Link href="/users" className="inline-flex items-center justify-center rounded-lg border border-(--border) px-3 py-2 text-xs font-medium text-(--foreground) transition hover:bg-(--muted)">
           Abrir cadastro completo
-        </Link>
+        </Link>}
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
