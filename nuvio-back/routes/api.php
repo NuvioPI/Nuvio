@@ -325,10 +325,11 @@ if ($recurso === 'usuarios') {
     // Apenas Administrador pode gerenciar usuários
     autenticarEAutorizar(['Administrador']);
     
-    $controller = new UsuarioController();
+    $controller = new UsuarioController((int) $usuarioAutenticado['idUsuario']);
     if ($method === 'GET' && !$id)      $controller->index();
     elseif ($method === 'GET' && $id)   $controller->show($id);
     elseif ($method === 'POST')         $controller->store();
+    elseif ($method === 'PATCH' && $id && $subrecurso === 'gerenciamento') $controller->manage($id);
     elseif ($method === 'PUT' && $id)   $controller->update($id);
     elseif ($method === 'DELETE' && $id) $controller->destroy($id);
     else { http_response_code(405); echo json_encode(['erro' => 'Método não permitido.']); }

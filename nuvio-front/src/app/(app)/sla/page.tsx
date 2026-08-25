@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 type Sla = {
   idSLA: number;
@@ -28,6 +29,7 @@ export default function SlaPage() {
   const [aberto, setAberto] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [slaParaExcluir, setSlaParaExcluir] = useState<number | null>(null);
   const [erro, setErro] = useState("");
   const [mensagem, setMensagem] = useState("");
 
@@ -44,7 +46,27 @@ export default function SlaPage() {
     }
   }
 
-  useEffect(() => { void carregar(); }, []);
+  useEffect(() => {
+    let ativo = true;
+
+    apiFetch<{ slas: Sla[] }>("/sla")
+      .then((resposta) => {
+        if (ativo) {
+          setSlas(resposta.slas);
+          setErro("");
+        }
+      })
+      .catch((causa) => {
+        if (ativo) setErro(causa instanceof Error ? causa.message : "Não foi possível carregar os SLAs.");
+      })
+      .finally(() => {
+        if (ativo) setCarregando(false);
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   function abrirNovo() {
     setEditando(null);
@@ -83,11 +105,18 @@ export default function SlaPage() {
     }
   }
 
-  async function remover(id: number) {
-    if (!window.confirm("Remover este SLA? Tickets vinculados não podem ser removidos.")) return;
+  function remover(id: number) {
+    setSlaParaExcluir(id);
+    setErro("");
+  }
+
+  async function confirmarRemocao() {
+    if (slaParaExcluir === null) return;
+
     try {
-      await apiFetch(`/sla/${id}`, { method: "DELETE" });
+      await apiFetch(`/sla/${slaParaExcluir}`, { method: "DELETE" });
       setMensagem("SLA removido com sucesso.");
+      setSlaParaExcluir(null);
       await carregar();
     } catch (causa) {
       setErro(causa instanceof Error ? causa.message : "Não foi possível remover o SLA.");
@@ -121,6 +150,13 @@ export default function SlaPage() {
       </section>
 
       {aberto && <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" role="dialog" aria-modal="true"><form onSubmit={salvar} className="w-full max-w-lg rounded-2xl border border-(--border) bg-(--card) p-6 shadow-2xl"><div className="mb-5 flex items-center justify-between"><h2 className="text-lg font-semibold text-(--foreground)">{editando ? "Editar SLA" : "Novo SLA"}</h2><button type="button" onClick={() => setAberto(false)} aria-label="Fechar" className="rounded-lg p-1 text-(--muted-foreground) hover:bg-(--muted)"><X className="h-5 w-5" /></button></div><div className="space-y-4"><Campo label="Nome"><input required value={form.nomeSLA} onChange={(e) => setForm({ ...form, nomeSLA: e.target.value })} /></Campo><div className="grid gap-4 sm:grid-cols-2"><Campo label="Tempo de resposta (minutos)"><input required min={1} type="number" value={form.tempoResposta} onChange={(e) => setForm({ ...form, tempoResposta: Number(e.target.value) })} /></Campo><Campo label="Tempo de resolução (minutos)"><input required min={1} type="number" value={form.tempoResolucao} onChange={(e) => setForm({ ...form, tempoResolucao: Number(e.target.value) })} /></Campo></div><Campo label="Descrição"><textarea required rows={3} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></Campo></div><div className="mt-6 flex justify-end gap-2"><button type="button" onClick={() => setAberto(false)} className="rounded-xl border border-(--border) px-4 py-2.5 text-sm text-(--muted-foreground)">Cancelar</button><button disabled={salvando} className="rounded-xl bg-(--primary) px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{salvando ? "Salvando..." : "Salvar SLA"}</button></div></form></div>}
+      <ConfirmModal
+        open={slaParaExcluir !== null}
+        title="Remover SLA"
+        message="Remover este SLA? Tickets vinculados continuarão preservados, mas não poderão usar esta política."
+        onCancel={() => setSlaParaExcluir(null)}
+        onConfirm={() => void confirmarRemocao()}
+      />
     </div>
   );
 }

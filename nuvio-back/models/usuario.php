@@ -131,11 +131,32 @@ class Usuario
         if (in_array('telefone', $colunas))   $extras .= ', u.telefone';
         if (in_array('fotoPerfil', $colunas)) $extras .= ', u.fotoPerfil';
 
+        $dataCadastro = in_array('dataCadastro', $colunas)
+            ? 'u.dataCadastro'
+            : 'NULL AS dataCadastro';
+
+        $temAdministrador = $this->tabelaExiste('Administrador');
+        $temClientePerfil = $this->tabelaExiste('ClientePerfil');
+        $adminJoin = $temAdministrador
+            ? 'LEFT JOIN Administrador a ON a.idUsuario = u.idUsuario'
+            : '';
+        $adminFields = $temAdministrador
+            ? ', a.nivelAcesso, a.podeGerenciarUsuarios'
+            : ', NULL AS nivelAcesso, 0 AS podeGerenciarUsuarios';
+        $clienteJoin = $temClientePerfil
+            ? 'LEFT JOIN ClientePerfil cp ON cp.idUsuario = u.idUsuario'
+            : '';
+        $verificado = $temClientePerfil
+            ? 'COALESCE(cp.verificado, 0) AS verificado'
+            : '0 AS verificado';
+
         $stmt = $this->db->prepare(
-            "SELECT u.idUsuario, u.idtipoUsuario, u.nome, u.email, u.cargo, u.setor{$extras}, u.dataCadastro,
-                    tu.descricao AS tipo
+            "SELECT u.idUsuario, u.idtipoUsuario, u.nome, u.email, u.cargo, u.setor{$extras},
+                    {$dataCadastro}, tu.descricao AS tipo{$adminFields}, {$verificado}
              FROM Usuario u
              LEFT JOIN tipoUsuario tu ON tu.idtipoUsuario = u.idtipoUsuario
+             {$adminJoin}
+             {$clienteJoin}
              ORDER BY u.nome ASC"
         );
         $stmt->execute();
@@ -172,6 +193,11 @@ class Usuario
         $sets   = ['nome = ?', 'email = ?', 'cargo = ?', 'setor = ?'];
         $params = [$this->nome, $this->email, $this->cargo, $this->setor];
 
+        if ($this->idtipoUsuario !== null) {
+            $sets[] = 'idtipoUsuario = ?';
+            $params[] = (int) $this->idtipoUsuario;
+        }
+
         if (in_array('telefone', $colunas)) {
             $sets[]   = 'telefone = ?';
             $params[] = $this->telefone;
@@ -202,6 +228,20 @@ class Usuario
             $this->colunasCached = ['nome', 'email', 'cargo', 'setor'];
         }
         return $this->colunasCached;
+    }
+
+    private function tabelaExiste(string $tabela): bool
+    {
+        try {
+            $stmt = $this->db->prepare(
+                'SELECT COUNT(*) FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+            );
+            $stmt->execute([$tabela]);
+            return (int) $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            return false;
+        }
     }
 
     public function updateSenha($senhaHash)

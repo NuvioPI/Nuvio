@@ -1,10 +1,8 @@
 // app/admin/dashboard/page.tsx
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Playfair_Display, DM_Sans } from "next/font/google";
-
-const playfair = Playfair_Display({ subsets: ["latin"], style: ["italic"] });
-const dmSans = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500"] });
+import RecentTicketsPanel from "@/components/admin/RecentTicketsPanel";
+import UserManagementPanel from "@/components/admin/UserManagementPanel";
 
 export const metadata: Metadata = {
   title: "Nuvio | Dashboard Admin",
@@ -99,54 +97,6 @@ const actions = [
     icon: "settings",
     bg: "#f1efe8",
     ic: "#888780",
-  },
-];
-
-const tickets = [
-  {
-    title: "Erro ao gerar boleto",
-    author: "Maria Souza",
-    time: "há 10min",
-    status: "Aberto",
-    dot: "#378add",
-    badgeBg: "#e6f1fb",
-    badgeTxt: "#185fa5",
-  },
-  {
-    title: "Não consigo acessar o portal",
-    author: "Carlos Lima",
-    time: "há 42min",
-    status: "Aguardando",
-    dot: "#ef9f27",
-    badgeBg: "#faeeda",
-    badgeTxt: "#854f0b",
-  },
-  {
-    title: "Dúvida sobre plano Pro",
-    author: "Ana Ferreira",
-    time: "há 1h",
-    status: "Em andamento",
-    dot: "#2fae5a",
-    badgeBg: "#eaf3de",
-    badgeTxt: "#3b6d11",
-  },
-  {
-    title: "Solicitação de NF",
-    author: "Pedro Alves",
-    time: "há 2h",
-    status: "Resolvido",
-    dot: "#888780",
-    badgeBg: "#f1efe8",
-    badgeTxt: "#5f5e5a",
-  },
-  {
-    title: "Integração com ERP falhou",
-    author: "Tech Corp",
-    time: "há 3h",
-    status: "Aberto",
-    dot: "#378add",
-    badgeBg: "#e6f1fb",
-    badgeTxt: "#185fa5",
   },
 ];
 
@@ -343,37 +293,7 @@ export default function AdminDashboard() {
 
       {/* PAINÉIS INFERIORES */}
       <section className="grid grid-cols-2 gap-2.5">
-        {/* tickets recentes */}
-        <div className="bg-(--admin-card) border border-(--border) rounded-xl p-4">
-          <span className={labelCls}>Tickets recentes</span>
-          <div className="flex flex-col divide-y divide-(--border)">
-            {tickets.map((t, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-2.5 py-2 first:pt-0 last:pb-0"
-              >
-                <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ background: t.dot }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] text-(--foreground) truncate">
-                    {t.title}
-                  </p>
-                  <p className="text-[11px] text-(--muted-foreground)">
-                    {t.author} · {t.time}
-                  </p>
-                </div>
-                <span
-                  className="text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0"
-                  style={{ background: t.badgeBg, color: t.badgeTxt }}
-                >
-                  {t.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <RecentTicketsPanel />
 
         {/* atividade recente */}
         <div className="bg-(--admin-card) border border-(--border) rounded-xl p-4">
@@ -400,6 +320,8 @@ export default function AdminDashboard() {
           </div>
         </div>
       </section>
+
+      <UserManagementPanel />
     </div>
   );
 }

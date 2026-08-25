@@ -13,7 +13,7 @@ class Administrador
     public $podeVerRelatorios;
     public $ultimoAcesso;
 
-    private $niveisPermitidos = ['padrao', 'super'];
+    private $niveisPermitidos = ['padrao', 'gerente', 'super'];
 
     public function __construct($conexao)
     {

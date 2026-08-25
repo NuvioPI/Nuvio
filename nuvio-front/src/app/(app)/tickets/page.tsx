@@ -6,6 +6,7 @@ import { AlertCircle, CheckCircle2, Clock3, FileText, Search, Trash2 } from "luc
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type { TicketResumo } from "@/components/dashboard/ui/table";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 export default function HistoricoChamadosPage() {
   const { usuario } = useAuth();
@@ -16,6 +17,7 @@ export default function HistoricoChamadosPage() {
   const [erro, setErro] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [removendoId, setRemovendoId] = useState<number | null>(null);
+  const [ticketParaExcluir, setTicketParaExcluir] = useState<TicketResumo | null>(null);
 
   const tipoUsuario = typeof usuario?.tipo === "object" && usuario.tipo !== null
     ? usuario.tipo.nome
@@ -36,12 +38,16 @@ export default function HistoricoChamadosPage() {
 
   const total = (valor: string) => tickets.filter((ticket) => ticket.statusTicket === valor).length;
 
-  async function excluirTicket(ticket: TicketResumo) {
-    const confirmado = window.confirm(
-      `Atenção: esta ação excluirá permanentemente o ticket #${ticket.idTicket} - ${ticket.titulo}, incluindo respostas, anexos, avaliações e histórico.\n\nDeseja realmente continuar?`
-    );
+  function excluirTicket(ticket: TicketResumo) {
+    setTicketParaExcluir(ticket);
+    setErro("");
+    setMensagem("");
+  }
 
-    if (!confirmado) return;
+  async function confirmarExclusaoTicket() {
+    if (!ticketParaExcluir) return;
+
+    const ticket = ticketParaExcluir;
 
     setErro("");
     setMensagem("");
@@ -51,6 +57,7 @@ export default function HistoricoChamadosPage() {
       await apiFetch(`/tickets/${ticket.idTicket}`, { method: "DELETE" });
       setTickets((atuais) => atuais.filter((item) => item.idTicket !== ticket.idTicket));
       setMensagem(`Ticket #${ticket.idTicket} removido com sucesso.`);
+      setTicketParaExcluir(null);
     } catch (causa) {
       setErro(causa instanceof Error ? causa.message : "Não foi possível remover o ticket.");
     } finally {
@@ -88,6 +95,14 @@ export default function HistoricoChamadosPage() {
         </tr>)}
       </tbody></table></div>
     </div>
+    <ConfirmModal
+      open={ticketParaExcluir !== null}
+      title="Excluir ticket"
+      message={ticketParaExcluir ? `A exclusão será permanente e removerá respostas, anexos, avaliações e histórico do ticket #${ticketParaExcluir.idTicket}.` : ""}
+      loading={removendoId !== null}
+      onCancel={() => { if (removendoId === null) setTicketParaExcluir(null); }}
+      onConfirm={() => void confirmarExclusaoTicket()}
+    />
   </main>;
 }
 
