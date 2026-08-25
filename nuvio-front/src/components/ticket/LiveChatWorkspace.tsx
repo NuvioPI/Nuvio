@@ -77,7 +77,7 @@ export function LiveChatWorkspace({ fullscreen = false }: { fullscreen?: boolean
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const selected  = conversations.find((c) => c.id === selectedId) ?? conversations[0];
-  const messages  = allMessages[selectedId] ?? [];
+  const messages  = useMemo(() => allMessages[selectedId] ?? [], [allMessages, selectedId]);
   const filtered  = useMemo(
     () => conversations.filter((c) =>
       `${c.name} ${c.preview}`.toLowerCase().includes(search.toLowerCase())
@@ -335,6 +335,9 @@ export function LiveChatWorkspace({ fullscreen = false }: { fullscreen?: boolean
             </div>
           </form>
         </div>
+        <footer className="border-t border-(--border) bg-(--card) px-5 py-1.5 text-center text-[11px] text-(--muted-foreground)">
+          Página em teste
+        </footer>
       </section>
     </div>
   );

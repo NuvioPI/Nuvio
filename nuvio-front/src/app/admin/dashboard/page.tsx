@@ -61,7 +61,7 @@ const actions = [
   {
     label: "Usuários e permissões",
     desc: "Gerencia agentes, funções e níveis de acesso ao sistema.",
-    href: "/users",
+    href: "/users#gerenciamento",
     icon: "users",
     bg: "#eeedfe",
     ic: "#534ab7",
