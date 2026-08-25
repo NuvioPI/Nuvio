@@ -2,10 +2,10 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   BriefcaseBusiness,
   Check,
-  CheckCircle2,
   Edit3,
   LoaderCircle,
   Search,
@@ -277,7 +277,7 @@ export default function UserManagementPanel({ showFullRegistrationLink = true }:
                   </div>
                 </td>
                 <td className="p-3"><span className="inline-flex items-center gap-1 rounded-full bg-(--muted) px-2 py-1 text-[11px] text-(--foreground)"><BriefcaseBusiness size={12} />{perfilDoUsuario(usuario)}</span></td>
-                <td className="p-3">{estaVerificado(usuario) ? <span className="inline-flex items-center gap-1 text-green-700"><CheckCircle2 size={14} />Verificado</span> : <span className="text-(--muted-foreground)">Pendente</span>}</td>
+                <td className="p-3">{estaVerificado(usuario) ? <span className="inline-flex items-center gap-1 text-green-700"><Image src="/icons/shield-trust.svg" alt="" width={15} height={15} />Verificado</span> : <span className="text-(--muted-foreground)">Pendente</span>}</td>
                 <td className="p-3 text-(--muted-foreground)">{usuario.cargo || usuario.setor || "Sem cargo informado"}</td>
                 <td className="p-3"><div className="flex justify-end gap-1">
                   <button type="button" onClick={() => alternarVerificado(usuario)} title={estaVerificado(usuario) ? "Marcar como não verificado" : "Marcar como verificado"} className="rounded-md p-2 text-green-700 transition hover:bg-green-500/10"><Check size={15} /></button>
