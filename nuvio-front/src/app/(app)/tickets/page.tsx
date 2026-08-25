@@ -38,7 +38,7 @@ export default function HistoricoChamadosPage() {
 
   async function excluirTicket(ticket: TicketResumo) {
     const confirmado = window.confirm(
-      `Excluir o ticket #${ticket.idTicket} - ${ticket.titulo}? Esta ação também removerá respostas, anexos e avaliações.`
+      `Atenção: esta ação excluirá permanentemente o ticket #${ticket.idTicket} - ${ticket.titulo}, incluindo respostas, anexos, avaliações e histórico.\n\nDeseja realmente continuar?`
     );
 
     if (!confirmado) return;

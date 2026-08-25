@@ -687,14 +687,27 @@ class TicketController extends BaseController
 
             $this->db->beginTransaction();
 
-            // Remove primeiro os registros que possuem FK para Ticket.
-            foreach ([
-                'respostaTicket',
-                'anexo',
-                'avaliacaoTicket',
-            ] as $tabelaDependente) {
+            // Remove todos os registros que possuem FK para Ticket.
+            // Isso tambÃ©m cobre tabelas antigas sem ON DELETE CASCADE.
+            $dependencias = $this->db->query(
+                "SELECT DISTINCT TABLE_NAME, COLUMN_NAME
+                 FROM information_schema.KEY_COLUMN_USAGE
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND REFERENCED_TABLE_SCHEMA = DATABASE()
+                   AND REFERENCED_TABLE_NAME = 'Ticket'
+                   AND TABLE_NAME <> 'Ticket'"
+            )->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($dependencias as $dependencia) {
+                $tabela = str_replace('`', '``', (string) $dependencia['TABLE_NAME']);
+                $coluna = str_replace('`', '``', (string) $dependencia['COLUMN_NAME']);
+
+                if ($tabela === '' || $coluna === '') {
+                    continue;
+                }
+
                 $stmt = $this->db->prepare(
-                    "DELETE FROM {$tabelaDependente} WHERE idTicket = ?"
+                    "DELETE FROM `{$tabela}` WHERE `{$coluna}` = ?"
                 );
                 $stmt->execute([(int) $id]);
             }
