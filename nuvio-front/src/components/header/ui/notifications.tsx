@@ -64,7 +64,7 @@ export function Notifications() {
   }, []);
 
   return (
-    <div ref={dropdownRef} className="relative">
+    <div ref={dropdownRef} className="relative z-[100]">
       <AnimateIcon animateOnHover>
         <button
           type="button"
@@ -85,7 +85,7 @@ export function Notifications() {
       </AnimateIcon>
 
       {open && (
-        <div className="absolute right-0 z-10 mt-3 w-[min(92vw,380px)] rounded-lg border border-(--card-border) bg-(--card) shadow-lg" role="dialog" aria-label="Notificações">
+        <div className="absolute right-0 top-full z-[110] mt-3 w-[min(92vw,380px)] rounded-lg border border-(--card-border) bg-(--card) shadow-lg" role="dialog" aria-label="Notificações">
           <div className="p-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="font-semibold text-(--foreground)">Notificações</h3>

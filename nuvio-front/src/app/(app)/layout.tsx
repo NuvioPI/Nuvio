@@ -49,7 +49,7 @@ export default function DashboardLayout({
       <div className="flex flex-col flex-1 min-w-0 transition-all duration-300">
 
         {/* HEADER */}
-        <header className="h-20 shrink-0 z-30">
+        <header className="relative z-40 h-20 shrink-0">
           <Header onMobileMenuClick={() => setMobileOpen(true)} />
         </header>
 
