@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch, API_URL } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
+import { NuvioBadge } from "@/components/ui/NuvioBadge";
 
 type Status = "online" | "ausente" | "ocupado" | "offline";
 
@@ -23,7 +23,6 @@ export function Profile() {
     const { usuario, logout } = useAuth();
     const [nome, setNome] = useState<string | null>(null);
     const [foto, setFoto] = useState<string | null>(null);
-    const [verificado, setVerificado] = useState<boolean | number | string | null>(null);
     const [status, setStatus] = useState<Status>("online");
 
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -36,7 +35,6 @@ export function Profile() {
 
     useEffect(() => {
         if (usuario?.nome) setNome(usuario.nome);
-        if (usuario?.verificado !== undefined) setVerificado(usuario.verificado);
         if (usuario?.fotoPerfil) {
             const fotoVal = usuario.fotoPerfil;
             if (fotoVal.startsWith("http") || fotoVal.startsWith("data:")) {
@@ -51,7 +49,6 @@ export function Profile() {
                 const dados = await apiFetch<any>("/auth/verificar", { method: "GET" });
                 const u = dados.usuario ?? dados;
                 if (u?.nome) setNome(u.nome);
-                if (u?.verificado !== undefined) setVerificado(u.verificado);
                 const fotoVal = u?.fotoPerfil || u?.fotoperfil || null;
                 if (fotoVal) {
                     if (fotoVal.startsWith("http") || fotoVal.startsWith("data:")) {
@@ -132,7 +129,7 @@ export function Profile() {
                     <div className="px-2.5 py-2 border-b border-(--border) mb-1">
                         <div className="flex min-w-0 items-center gap-1.5 truncate font-semibold text-sm text-(--foreground)">
                             <span className="truncate">{nome || usuario?.nome || "Meu Perfil"}</span>
-                            <VerifiedBadge verified={verificado ?? usuario?.verificado} />
+                            <NuvioBadge tipo={usuario?.tipo} />
                         </div>
                         <div className="text-xs text-(--muted-foreground) truncate">
                             {usuario?.email || "Conectado"}

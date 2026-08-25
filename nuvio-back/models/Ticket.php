@@ -62,6 +62,7 @@ class Ticket
     public $nomeTecnico;
     public $nomeCategoria;
     public $nomeSLA;
+    public $tipoUsuario;
     public $verificado;
 
     public function __construct($conexao)
@@ -98,12 +99,15 @@ class Ticket
                 u.email AS emailUsuario,
                 {$fotoSelect},
                 {$verificadoSelect},
+                tu.descricao AS tipoUsuario,
                 us.nome AS nomeTecnico,
                 c.nomeCategoria,
                 s.nomeSLA
             FROM {$this->tabela} t
             INNER JOIN Usuario u
                 ON t.idUsuario = u.idUsuario
+            INNER JOIN tipoUsuario tu
+                ON tu.idtipoUsuario = u.idtipoUsuario
             INNER JOIN Tecnico tc
                 ON t.idTecnico = tc.idTecnico
             INNER JOIN Usuario us
@@ -151,6 +155,7 @@ class Ticket
                 u.email AS emailUsuario,
                 {$fotoSelect},
                 {$verificadoSelect},
+                tu.descricao AS tipoUsuario,
                 us.nome AS nomeTecnico,
                 c.nomeCategoria,
                 s.nomeSLA,
@@ -159,6 +164,8 @@ class Ticket
             FROM {$this->tabela} t
             INNER JOIN Usuario u
                 ON t.idUsuario = u.idUsuario
+            INNER JOIN tipoUsuario tu
+                ON tu.idtipoUsuario = u.idtipoUsuario
             INNER JOIN Tecnico tc
                 ON t.idTecnico = tc.idTecnico
             INNER JOIN Usuario us
@@ -256,10 +263,13 @@ class Ticket
                 t.dataFechamento,
                 u.nome AS nomeUsuario,
                 {$verificadoSelect},
+                tu.descricao AS tipoUsuario,
                 c.nomeCategoria
             FROM {$this->tabela} t
             INNER JOIN Usuario u
                 ON t.idUsuario = u.idUsuario
+            INNER JOIN tipoUsuario tu
+                ON tu.idtipoUsuario = u.idtipoUsuario
             {$clientePerfilJoin}
             INNER JOIN Categoria c
                 ON t.idCategoria = c.idCategoria

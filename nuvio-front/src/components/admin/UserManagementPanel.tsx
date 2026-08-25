@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
+import { NuvioBadge } from "@/components/ui/NuvioBadge";
 
 type Perfil = "Cliente" | "Técnico" | "Gerente" | "Administrador";
 
@@ -274,7 +274,7 @@ export default function UserManagementPanel({ showFullRegistrationLink = true }:
                 <td className="p-3">
                   <div className="flex items-center gap-2.5">
                     <span className="grid h-8 w-8 place-items-center rounded-full bg-(--primary)/10 text-(--primary)"><UserRound size={15} /></span>
-                    <div className="min-w-0"><p className="flex min-w-0 items-center gap-1.5 truncate font-medium text-(--foreground)"><span className="truncate">{usuario.nome}</span><VerifiedBadge verified={estaVerificado(usuario)} /></p><p className="truncate text-[11px] text-(--muted-foreground)">{usuario.email}</p></div>
+                    <div className="min-w-0"><p className="flex min-w-0 items-center gap-1.5 truncate font-medium text-(--foreground)"><span className="truncate">{usuario.nome}</span><NuvioBadge tipo={perfilDoUsuario(usuario)} /></p><p className="truncate text-[11px] text-(--muted-foreground)">{usuario.email}</p></div>
                   </div>
                 </td>
                 <td className="p-3"><span className="inline-flex items-center gap-1 rounded-full bg-(--muted) px-2 py-1 text-[11px] text-(--foreground)"><BriefcaseBusiness size={12} />{perfilDoUsuario(usuario)}</span></td>

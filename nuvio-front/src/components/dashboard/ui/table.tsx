@@ -1,14 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { API_URL } from "@/lib/api";
-import { VerifiedName } from "@/components/ui/VerifiedBadge";
+import { NuvioName } from "@/components/ui/NuvioBadge";
 
 export type TicketResumo = {
   idTicket: number;
   titulo: string;
   nomeUsuario: string;
   fotoPerfil?: string | null;
-  verificado?: boolean | number | string | null;
+  tipoUsuario?: string | null;
   prioridade: "Alta" | "Media" | "Baixa";
   statusTicket: string;
   dataAbertura: string;
@@ -85,7 +85,7 @@ export default function Table({ tickets, carregando }: { tickets: TicketResumo[]
                 <td className="py-4">
                   <div className="flex gap-2 items-center text-(--foreground)">
                     <AvatarUsuario nome={ticket.nomeUsuario} foto={ticket.fotoPerfil} />
-                    <VerifiedName name={ticket.nomeUsuario} verified={ticket.verificado} />
+                    <NuvioName name={ticket.nomeUsuario} tipo={ticket.tipoUsuario} />
                   </div>
                 </td>
                 <td className="py-4"><span className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${prioridadeClasses[ticket.prioridade] ?? "bg-zinc-100 text-zinc-700"}`}>{ticket.prioridade}</span></td>

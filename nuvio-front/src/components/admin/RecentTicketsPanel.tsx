@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { VerifiedName } from "@/components/ui/VerifiedBadge";
+import { NuvioName } from "@/components/ui/NuvioBadge";
 
 type Ticket = {
   idTicket: number;
   titulo: string;
   nomeUsuario?: string | null;
-  verificado?: boolean | number | string | null;
+  tipoUsuario?: string | null;
   statusTicket: string;
   prioridade: string;
   dataAbertura: string;
@@ -89,7 +89,7 @@ export default function RecentTicketsPanel() {
                     #{ticket.idTicket} · {ticket.titulo}
                   </p>
                   <p className="text-[11px] text-(--muted-foreground)">
-                    {ticket.nomeUsuario ? <VerifiedName name={ticket.nomeUsuario} verified={ticket.verificado} /> : "Usuário não informado"} · {dataFormatada(ticket.dataAbertura)}
+                    {ticket.nomeUsuario ? <NuvioName name={ticket.nomeUsuario} tipo={ticket.tipoUsuario} /> : "Usuário não informado"} · {dataFormatada(ticket.dataAbertura)}
                   </p>
                 </div>
                 <span

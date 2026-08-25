@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { apiFetch, API_URL } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
+import { NuvioBadge } from "@/components/ui/NuvioBadge";
 
 interface PerfilUsuario {
   id: number;
@@ -41,7 +41,6 @@ interface PerfilUsuario {
   setor?: string | null;
   telefone?: string | null;
   fotoPerfil?: string | null;
-  verificado?: boolean | number | string | null;
   dataCadastro?: string | null;
   tipo?: string | { id: number; nome: string } | null;
 }
@@ -419,7 +418,7 @@ export default function PerfilPage() {
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
                   <h1 className="inline-flex items-center gap-2 text-2xl font-bold tracking-tight text-(--foreground) sm:text-3xl">
                     {usuario?.nome}
-                    <VerifiedBadge verified={usuario?.verificado} size={20} />
+                    <NuvioBadge tipo={usuario?.tipo} size={20} />
                   </h1>
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-xs font-semibold ${
@@ -556,7 +555,7 @@ export default function PerfilPage() {
                 <div className="flex items-center gap-1.5 text-xs text-(--muted-foreground)">
                   <User className="h-3.5 w-3.5 text-(--primary)" /> Nome Completo
                 </div>
-                <p className="mt-1 text-sm font-semibold text-(--foreground)"><span className="inline-flex items-center gap-1.5">{usuario?.nome || "—"}<VerifiedBadge verified={usuario?.verificado} /></span></p>
+                <p className="mt-1 text-sm font-semibold text-(--foreground)"><span className="inline-flex items-center gap-1.5">{usuario?.nome || "—"}<NuvioBadge tipo={usuario?.tipo} /></span></p>
               </div>
 
               <div className="rounded-2xl border border-(--border)/60 bg-(--muted)/40 p-4">

@@ -17,7 +17,7 @@ import {
 import { motion } from "motion/react";
 import { apiFetch } from "@/lib/api";
 import type { TicketResumo } from "@/components/dashboard/ui/table";
-import { VerifiedName } from "@/components/ui/VerifiedBadge";
+import { NuvioName } from "@/components/ui/NuvioBadge";
 
 const statusOrdem = ["Aberto", "Em atendimento", "Resolvido", "Fechado"] as const;
 const prioridadeOrdem = ["Alta", "Media", "Baixa"] as const;
@@ -284,7 +284,7 @@ export default function ReportsPage() {
                 >
                   <td className="p-5 text-(--foreground)">#{ticket.idTicket}</td>
                   <td className="p-5 font-medium text-(--foreground)">{ticket.titulo}</td>
-                  <td className="p-5 text-(--foreground)"><VerifiedName name={ticket.nomeUsuario} verified={ticket.verificado} /></td>
+                  <td className="p-5 text-(--foreground)"><NuvioName name={ticket.nomeUsuario} tipo={ticket.tipoUsuario} /></td>
                   <td className="p-5"><Badge classe={prioridadeClasses[ticket.prioridade]}>{ticket.prioridade}</Badge></td>
                   <td className="p-5"><Badge classe={statusClasses[ticket.statusTicket]}>{ticket.statusTicket}</Badge></td>
                   <td className="p-5 text-(--muted-foreground)">{dataFormatada(ticket.dataAbertura)}</td>
