@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, Clock3, FileText, Search, Trash2 } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { API_URL, apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type { TicketResumo } from "@/components/dashboard/ui/table";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -85,16 +85,19 @@ export default function HistoricoChamadosPage() {
     </div></div>
     {mensagem && <div role="status" className="mb-5 rounded-xl border border-green-500/25 bg-green-500/10 p-4 text-sm text-green-600">{mensagem}</div>}
     {erro && !carregando && <div role="alert" className="mb-5 rounded-xl border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-600">{erro}</div>}
-    <div className="bg-(--card) border border-(--border) rounded-[28px] overflow-hidden shadow-(--shadow)"><div className="p-6 border-b border-(--border)"><h2 className="text-xl font-semibold">Chamados</h2></div>
-      <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-(--border)">
-        <th className="p-5 text-left">ID</th><th className="p-5 text-left">Título</th><th className="p-5 text-left">Solicitante</th><th className="p-5 text-left">Prioridade</th><th className="p-5 text-left">Status</th><th className="p-5 text-left">Aberto em</th>
+    <div className="bg-(--card) border border-(--border) rounded-[28px] overflow-hidden shadow-(--shadow)"><div className="flex items-center justify-between gap-4 border-b border-(--border) p-6"><div><h2 className="text-xl font-semibold">Chamados</h2><p className="mt-1 text-sm text-(--muted-foreground)">{filtrados.length} {filtrados.length === 1 ? "registro encontrado" : "registros encontrados"}</p></div><span className="hidden rounded-full bg-(--muted) px-3 py-1.5 text-xs font-medium text-(--muted-foreground) sm:inline-flex">Mais recentes primeiro</span></div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[1050px] table-fixed"><thead className="bg-(--background)/35"><tr className="border-b border-(--border)">
+        <th className="w-[88px] px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.08em] text-(--muted-foreground)">ID</th><th className="w-[29%] px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.08em] text-(--muted-foreground)">Título</th><th className="w-[24%] px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.08em] text-(--muted-foreground)">Solicitante</th><th className="w-[130px] px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.08em] text-(--muted-foreground)">Prioridade</th><th className="w-[170px] px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.08em] text-(--muted-foreground)">Status</th><th className="w-[175px] px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.08em] text-(--muted-foreground)">Aberto em</th><th className="w-[72px] px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.08em] text-(--muted-foreground)">Ações</th>
       </tr></thead><tbody>
-        {carregando && <tr><td colSpan={6} className="p-8 text-center text-(--muted-foreground)">Carregando chamados...</td></tr>}
-        {!carregando && !erro && filtrados.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-(--muted-foreground)">Nenhum chamado encontrado.</td></tr>}
-        {filtrados.map((ticket) => <tr key={ticket.idTicket} className="border-b border-(--border) hover:bg-(--muted)">
-          <td className="p-5"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="text-(--primary) hover:underline">#{ticket.idTicket}</Link></td><td className="p-5 font-medium"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="inline-flex max-w-full items-center gap-2 hover:text-(--primary)"><span className="truncate">{ticket.titulo}</span><NewTicketBadge dataAbertura={ticket.dataAbertura} /></Link></td><td className="p-5"><NuvioName name={ticket.nomeUsuario} tipo={ticket.tipoUsuario} /></td>
-          <td className="p-5"><Badge>{ticket.prioridade}</Badge></td><td className="p-5"><Badge>{ticket.statusTicket}</Badge></td>
-          <td className="p-5 text-(--muted-foreground)"><div className="flex items-center justify-between gap-3"><span>{formatarDataBackend(ticket.dataAbertura)}</span>{podeExcluir && <button type="button" onClick={() => excluirTicket(ticket)} disabled={removendoId === ticket.idTicket} aria-label={`Excluir ticket #${ticket.idTicket}`} title="Excluir ticket" className="rounded-lg p-2 text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 size={17} /></button>}</div></td>
+        {carregando && <tr><td colSpan={7} className="p-8 text-center text-(--muted-foreground)">Carregando chamados...</td></tr>}
+        {!carregando && !erro && filtrados.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-(--muted-foreground)">Nenhum chamado encontrado.</td></tr>}
+        {filtrados.map((ticket) => <tr key={ticket.idTicket} className="group border-b border-(--border) transition-colors last:border-0 hover:bg-(--muted)/45">
+          <td className="px-6 py-4 align-middle"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="inline-flex rounded-lg bg-(--primary)/10 px-2.5 py-1 text-sm font-semibold text-(--primary) transition hover:bg-(--primary)/15">#{ticket.idTicket}</Link></td>
+          <td className="px-6 py-4 align-middle"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="flex min-w-0 items-center gap-2 font-medium transition hover:text-(--primary)"><span className="min-w-0 truncate">{ticket.titulo}</span><NewTicketBadge dataAbertura={ticket.dataAbertura} /></Link></td>
+          <td className="px-6 py-4 align-middle"><Link href={`/tickets/atendimento?ticket=${ticket.idTicket}`} className="flex min-w-0 items-center gap-3"><AvatarSolicitante nome={ticket.nomeUsuario} foto={ticket.fotoPerfil} /><span className="min-w-0"><span className="block truncate text-sm font-medium"><NuvioName name={ticket.nomeUsuario} tipo={ticket.tipoUsuario} className="max-w-full" /></span>{ticket.emailUsuario && <span className="mt-0.5 block truncate text-xs text-(--muted-foreground)">{ticket.emailUsuario}</span>}</span></Link></td>
+          <td className="px-6 py-4 align-middle"><Badge>{ticket.prioridade}</Badge></td><td className="px-6 py-4 align-middle"><Badge>{ticket.statusTicket}</Badge></td>
+          <td className="px-6 py-4 align-middle text-sm text-(--muted-foreground)">{formatarDataBackend(ticket.dataAbertura)}</td>
+          <td className="px-6 py-4 text-right align-middle">{podeExcluir && <button type="button" onClick={() => excluirTicket(ticket)} disabled={removendoId === ticket.idTicket} aria-label={`Excluir ticket #${ticket.idTicket}`} title="Excluir ticket" className="rounded-lg p-2 text-red-500 opacity-70 transition hover:bg-red-500/10 hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 size={17} /></button>}</td>
         </tr>)}
       </tbody></table></div>
     </div>
@@ -114,5 +117,41 @@ function MetricCard({ title, value, icon }: { title: string; value: number; icon
 }
 
 function Badge({ children }: { children: string }) {
-  return <span className="inline-flex rounded-full bg-(--muted) px-3 py-1 text-sm">{children}</span>;
+  const classes = children === "Alta"
+    ? "bg-red-500/10 text-red-400"
+    : children === "Media"
+      ? "bg-amber-500/10 text-amber-300"
+      : children === "Baixa"
+        ? "bg-sky-500/10 text-sky-300"
+        : children === "Aberto"
+          ? "bg-emerald-500/10 text-emerald-400"
+          : children === "Em atendimento"
+            ? "bg-amber-500/10 text-amber-300"
+            : "bg-(--muted) text-(--muted-foreground)";
+
+  return <span className={`inline-flex whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold ${classes}`}>{children}</span>;
+}
+
+function resolverFoto(foto?: string | null) {
+  if (!foto) return null;
+  if (foto.startsWith("data:") || foto.startsWith("http")) return foto;
+  return `${API_URL}${foto.startsWith("/") ? "" : "/"}${foto}`;
+}
+
+function iniciais(nome: string) {
+  return nome.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((parte) => parte[0]?.toUpperCase()).join("") || "?";
+}
+
+function AvatarSolicitante({ nome, foto }: { nome: string; foto?: string | null }) {
+  const [imagemComErro, setImagemComErro] = useState(false);
+  const src = resolverFoto(foto);
+
+  if (!src || imagemComErro) {
+    return <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-(--primary)/15 text-xs font-bold text-(--primary) ring-1 ring-(--primary)/20">{iniciais(nome)}</span>;
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={`Foto de ${nome}`} onError={() => setImagemComErro(true)} className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-(--border)" />
+  );
 }

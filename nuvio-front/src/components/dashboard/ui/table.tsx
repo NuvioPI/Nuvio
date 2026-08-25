@@ -9,6 +9,7 @@ export type TicketResumo = {
   idTicket: number;
   titulo: string;
   nomeUsuario: string;
+  emailUsuario?: string | null;
   fotoPerfil?: string | null;
   tipoUsuario?: string | null;
   prioridade: "Alta" | "Media" | "Baixa";
